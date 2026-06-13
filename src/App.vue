@@ -60,7 +60,6 @@ const isDashboardLayout = computed(()=>{
 /* 양쪽 브랜치에서 각각 추가한 높이와 배경색 속성을 모두 누락 없이 합쳤습니다 */
 .temp-header {
   height: 70px;
-  background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
