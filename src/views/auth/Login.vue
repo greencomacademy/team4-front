@@ -90,16 +90,12 @@ Design System Variables
 .auth-wrapper {
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
-  
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
-  
   --text-main: #0f172a;
   --text-sub: #475569;
   --text-muted: #94a3b8;
-  
   --border-color: #e2e8f0;
-  
   --shadow-card: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
 
   min-height: 100vh;

@@ -5,6 +5,11 @@ import { computed, ref } from 'vue';
 import { RouterView, useRoute, useRouter } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
 import AppHeader from './components/layout/AppHeader.vue';
+import AppHeader from './components/layout/AppHeader.vue';
+
+// 🚨 파일이 아직 없으므로 아래 두 줄은 반드시 주석 처리해야 화면이 뜹니다!
+// import AppHeader from './components/layout/AppHeader.vue'; 
+// import BaseToast from './components/ui/BaseToast.vue'; 
 
 const isSidebarOpen = ref(true);
 const route = useRoute();
@@ -33,7 +38,6 @@ const isDashboardLayout = computed(()=>{
     </div>
   </div>
   <!-- 소개홈페이지, 로그인, 점포등록화면 -->
-
 </template>
 
 <style scoped>
@@ -48,6 +52,7 @@ const isDashboardLayout = computed(()=>{
 .temp-header {
   height: 50px;
   background-color: #ffffff;
+  height: 70px;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
