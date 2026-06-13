@@ -10,5 +10,9 @@ createApp(App)
 .use(router)
 .mount('#app')
 
+const app = createApp(App)
+const pinia = createPinia()
 
-
+app.use(pinia);
+app.use(router) // 2. 🚨 여기가 빠져서 난 에러입니다! 반드시 추가해야 합니다.
+app.mount('#app')
