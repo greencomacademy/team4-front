@@ -12,7 +12,6 @@ const loginForm = reactive({
   password: '',
 });
 
-<<<<<<< HEAD
 const handleSubmit = async () => {
   if(loginForm.email && loginForm.password) {
     await authStore.login(loginForm);
@@ -23,19 +22,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <form @submit.prevent="handleSubmit">
-=======
-const hadleSubmit = async () => {
-  const resultValidationEmail = loginValidator.email(loginForm.email);
-  const resultValidationPassowrd = loginValidator.password(loginForm.password);
-
-}
-
-</script>
-
-<template>
   <form @submit.prevent="hadleSubmit">
->>>>>>> cc26a8f (로그인 회원가입 화면)
     <h1>로그인</h1>
     <div class="group">
     <MyInput
@@ -66,9 +53,6 @@ const hadleSubmit = async () => {
     <router-link to="/registration" class="register">회원가입</router-link>
     </div>
   </form>
-
-    </div>
-  </div>
 </template>
 
 <style scoped>
@@ -78,16 +62,12 @@ Design System Variables
 .auth-wrapper {
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
-  
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
-  
   --text-main: #0f172a;
   --text-sub: #475569;
   --text-muted: #94a3b8;
-  
   --border-color: #e2e8f0;
-  
   --shadow-card: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
 
   min-height: 100vh;
@@ -211,21 +191,7 @@ Sub Link Area
   color: var(--primary-hover);
   text-decoration: underline;
 }
-    <Mybutton
-    :btnType="'submit'"
-    :color="'gray'"
-    :size="'small'"
-    :content="'로그인'"  
-    ></Mybutton>
- 
-    <div class="sub-link">
-    <router-link to="/register" class="register">회원가입</router-link>
-    </div>
-  </form>
 
-</template>
-
-<style scoped>
 form {
   padding: 20px 0;
   display: flex;

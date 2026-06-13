@@ -99,7 +99,6 @@ const router = createRouter({
       }
     }
   ]
-})
 
 router.beforeEach((to, from) => {
   const authStore = useAuthStore();

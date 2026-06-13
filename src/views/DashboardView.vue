@@ -540,18 +540,4 @@ const tableData = ref([
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
 }
-<script setup>
-
-</script>
-
-<template>
-<div>
-    <h1>대시보드 화면</h1>
-    <p>라우터 연결 확인용</p>
-</div>
-
-</template>
-
-<style scoped>
-
 </style>
