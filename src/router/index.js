@@ -91,6 +91,40 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 });
+  routes: [
+    {
+      path:'/',
+      name:'home',
+      component:HomeView,
+      meta:{
+        layout: 'public',
+      }
+    },
+    {
+      path:'/login',
+      name:'login',
+      component:LoginView,
+      meta:{
+        layout: 'public',
+      }
+    },
+    {
+      path:'/signup',
+      name:'signup',
+      component:SignupView,
+      meta:{
+        layout: 'public',
+      }
+    },
+    {
+      path:'/dashboard',
+      name:'dashboard',
+      component:DashboardView,
+      meta:{
+        layout: 'dashboard'
+      }
+    }
+  ]
 
 router.beforeEach((to, from) => {
   const authStore = useAuthStore();

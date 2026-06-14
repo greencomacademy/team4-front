@@ -1,14 +1,21 @@
 <script setup>
 import { ref } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
+import { computed, ref } from 'vue';
+import { RouterView, useRoute, useRouter } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
 import AppHeader from './components/layout/AppHeader.vue';
 
 const isSidebarOpen = ref(true);
+const route = useRoute();
+const isDashboardLayout = computed(()=>{
+  return route.meta.layout === 'dashboard';
+});
 </script>
 
 <template>
-  <div class="app-wrapper">
+  <!-- 로그인 후 보여줄 대시보드화면 -->
+  <div class="app-wrapper" v-if="isDashboardLayout">
     <AppSidebar
       v-if="!isLandingPage"
       class="sidebar-area" 

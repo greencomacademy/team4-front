@@ -17,6 +17,10 @@
     <RouterLink to="/dashboard">
      <button>대시보드로 바로가기</button>
     </RouterLink>
+
+    <button>로그인</button>
+    <button>점포 등록</button>
+    <RouterLink to="/dashboard">대시보드로 바로가기</RouterLink>
 </div>
 
 </template>
