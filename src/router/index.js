@@ -1,9 +1,44 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import DashboardView from '../views/DashboardView.vue'
+import HomeView from '../views/HomeView.vue'
+import LoginView from '../views/LoginView.vue'
+import SignupView from '../views/SignupView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    // 지금은 빈 배열로 두어도 에러가 사라집니다. 나중에 3명이서 페이지를 붙일 때 여기에 추가합니다.
+    {
+      path:'/',
+      name:'home',
+      component:HomeView,
+      meta:{
+        layout: 'public',
+      }
+    },
+    {
+      path:'/login',
+      name:'login',
+      component:LoginView,
+      meta:{
+        layout: 'public',
+      }
+    },
+    {
+      path:'/signup',
+      name:'signup',
+      component:SignupView,
+      meta:{
+        layout: 'public',
+      }
+    },
+    {
+      path:'/dashboard',
+      name:'dashboard',
+      component:DashboardView,
+      meta:{
+        layout: 'dashboard'
+      }
+    }
   ]
 })
 
