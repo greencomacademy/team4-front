@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { RouterView } from 'vue-router';
+import { computed, ref } from 'vue';
+import { RouterView, useRoute, useRouter } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
 import AppHeader from './components/layout/AppHeader.vue';
 
@@ -9,10 +9,15 @@ import AppHeader from './components/layout/AppHeader.vue';
 // import BaseToast from './components/ui/BaseToast.vue'; 
 
 const isSidebarOpen = ref(true);
+const route = useRoute();
+const isDashboardLayout = computed(()=>{
+  return route.meta.layout === 'dashboard';
+});
 </script>
 
 <template>
-  <div class="app-wrapper">
+  <!-- 로그인 후 보여줄 대시보드화면 -->
+  <div class="app-wrapper" v-if="isDashboardLayout">
     <AppSidebar
       class="sidebar-area" 
       :is-open="isSidebarOpen"
@@ -24,10 +29,12 @@ const isSidebarOpen = ref(true);
       </AppHeader>
 
       <main class="page-area">
-        <!-- <RouterView /> -->
+        <RouterView />
       </main>
     </div>
   </div>
+  <!-- 소개홈페이지, 로그인, 점포등록화면 -->
+   <RouterView v-else/>
 </template>
 
 <style scoped>
