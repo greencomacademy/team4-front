@@ -1,15 +1,22 @@
 <script setup>
 import { ref } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
+import { computed, ref } from 'vue';
+import { RouterView, useRoute, useRouter } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
 <<<<<<< HEAD
 import AppHeader from './components/layout/AppHeader.vue';
 
 const isSidebarOpen = ref(true);
+const route = useRoute();
+const isDashboardLayout = computed(()=>{
+  return route.meta.layout === 'dashboard';
+});
 </script>
 
 <template>
-  <div class="app-wrapper">
+  <!-- 로그인 후 보여줄 대시보드화면 -->
+  <div class="app-wrapper" v-if="isDashboardLayout">
     <AppSidebar
       v-if="!isLandingPage"
       class="sidebar-area" 
@@ -21,7 +28,11 @@ const isSidebarOpen = ref(true);
       <AppHeader v-if="!isLandingPage" class="header-area temp-header">
       </AppHeader>
 
+<<<<<<< HEAD
       <main class="page-area" :class="{ 'no-padding': isLandingPage }">
+=======
+      <main class="page-area">
+>>>>>>> f2ffaf3 (로그인페이지와 대시보드의 분리, env파일 깃이그노어처리)
         <RouterView />
       </main>
     </div>

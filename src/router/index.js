@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router';
 import LandingView from '../views/LandingView.vue';
 import PlatformsView from '../views/PlatformsView.vue';
 import { useAuthStore } from '../store/useAuthStore';
+import { createRouter, createWebHistory } from 'vue-router'
+import DashboardView from '../views/DashboardView.vue'
+import HomeView from '../views/HomeView.vue'
+import LoginView from '../views/LoginView.vue'
+import SignupView from '../views/SignupView.vue'
 
 const routes = [
   {
@@ -60,6 +65,41 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 });
+  routes: [
+    {
+      path:'/',
+      name:'home',
+      component:HomeView,
+      meta:{
+        layout: 'public',
+      }
+    },
+    {
+      path:'/login',
+      name:'login',
+      component:LoginView,
+      meta:{
+        layout: 'public',
+      }
+    },
+    {
+      path:'/signup',
+      name:'signup',
+      component:SignupView,
+      meta:{
+        layout: 'public',
+      }
+    },
+    {
+      path:'/dashboard',
+      name:'dashboard',
+      component:DashboardView,
+      meta:{
+        layout: 'dashboard'
+      }
+    }
+  ]
+})
 
 router.beforeEach((to, from) => {
   const authStore = useAuthStore();
