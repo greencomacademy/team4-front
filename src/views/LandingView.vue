@@ -2,7 +2,10 @@
   <div class="landing-wrapper">
     <nav class="landing-nav">
       <div class="logo">배달 운영 정산 대시보드</div>
-      <button class="login-btn" @click="goToAuth">로그인</button>
+      <div class="button">
+        <button class="btn-login" @click="goToAuth">로그인</button>
+        <button class="btn-signup" @click="goToAuth">점포 등록</button>
+      </div>
     </nav>
 
     <header class="hero-section">
@@ -71,17 +74,19 @@ const goToAuth = () => {
   color: #000000;
 }
 
-.login-btn {
+.button {
+  display: flex;
+  gap: 15px;
+}
+
+.btn-login, .btn-signup {
   background: transparent;
   color: #333;
   font-weight: bold;
   padding: 8px 20px;
   border-radius: 20px;
   border: 3px solid #000000;
-}
-
-.login-btn:hover {
-  background-color: #f9fafc;
+  cursor: pointer;
 }
 
 /* 메인 청록색 배너 영역 */
