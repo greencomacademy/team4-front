@@ -1,10 +1,22 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
+// import LandingView from '../views/LandingView.vue';
+// import DashboardView from '../views/DashboardView.vue';
+import PlatformsView from '../views/PlatformsView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    // 지금은 빈 배열로 두어도 에러가 사라집니다. 나중에 3명이서 페이지를 붙일 때 여기에 추가합니다.
+    // {
+    //   path: '/',
+    //   name: 'landing',
+    //   component: LandingView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
+    // }
+    {
+      path: '/',
+      name: 'platform',
+      component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
+    }
   ]
-})
+});
 
-export default router
+export default router;
