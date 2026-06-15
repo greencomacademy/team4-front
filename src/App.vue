@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { RouterView, useRoute } from 'vue-router';
+import { ref } from 'vue';
+import { RouterView } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
 import AppHeader from './components/layout/AppHeader.vue';
 
@@ -8,17 +8,12 @@ import AppHeader from './components/layout/AppHeader.vue';
 // import AppHeader from './components/layout/AppHeader.vue'; 
 // import BaseToast from './components/ui/BaseToast.vue'; 
 
-const route = useRoute();
 const isSidebarOpen = ref(true);
-
-// 현재 주소가 '/' (랜딩 페이지)인지 감지하는 변수
-const isLandingPage = computed(() => route.path === '/');
 </script>
 
 <template>
   <div class="app-wrapper">
     <AppSidebar
-      v-if="!isLandingPage"
       class="sidebar-area" 
       :is-open="isSidebarOpen"
       @toggle="isSidebarOpen = !isSidebarOpen" 
@@ -28,8 +23,8 @@ const isLandingPage = computed(() => route.path === '/');
       <AppHeader v-if="!isLandingPage" class="header-area temp-header">
       </AppHeader>
 
-      <main class="page-area" :class="{ 'no-padding': isLandingPage }">
-        <RouterView />
+      <main class="page-area">
+        <!-- <RouterView /> -->
       </main>
     </div>
   </div>
@@ -38,6 +33,8 @@ const isLandingPage = computed(() => route.path === '/');
 <style scoped>
 .app-wrapper {
   display: flex; 
+  height: 100vh;
+  width: 100vw;
   overflow: hidden;
   background-color: #f5f7fb; 
 }
@@ -60,7 +57,14 @@ const isLandingPage = computed(() => route.path === '/');
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
+  padding: 0 20px;
   gap: 15px;
   font-weight: bold;
+}
+
+.page-area {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
 }
 </style>
