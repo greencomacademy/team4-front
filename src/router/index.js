@@ -55,21 +55,19 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-})
+});
 
 router.beforeEach((to, from) => {
-
   const authStore = useAuthStore();
-
-  const isUserAuthenticated = authStore.isLoggedIn
+  const isUserAuthenticated = authStore.isLoggedIn;
 
   if (to.meta.isAuthenticated && !isUserAuthenticated) {
-    return '/login';
+    return '/';
   } 
   if (to.meta.isGestOnly && isUserAuthenticated) {
-    return '/';
+    return '/platforms';
   }
-})
+});
 
 
 export default router;
