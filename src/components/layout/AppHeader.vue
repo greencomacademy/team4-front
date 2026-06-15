@@ -7,9 +7,6 @@ const router = useRouter()
 const goBack = () => {
   router.push('/Dashboard') // 뒤로가기 시 누르면, 대시보드 페이지로
 }
-
-
-
 </script>
 
 <template>
