@@ -1,4 +1,10 @@
 <script setup>
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../../store/useAuthStore';
+
+
+const router = useRouter();
+const authStore = useAuthStore();
 
 const redirectLogin = () => {
   router.push('/login');

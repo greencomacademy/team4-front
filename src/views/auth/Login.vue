@@ -3,25 +3,29 @@ import { reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import loginValidator from '../../utils/validator/auth/loginValidator';
 import MyInput from '../../components/input/MyInput.vue';
-import Mybutton from '../../components/button/Mybutton.vue';
+import MyButton from '../../components/button/MyButton.vue';
+import { useAuthStore } from '../../store/useAuthStore.js';
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const loginForm = reactive({
   email: '',
   password: '',
 });
 
-const hadleSubmit = async () => {
-  const resultValidationEmail = loginValidator.email(loginForm.email);
-  const resultValidationPassowrd = loginValidator.password(loginForm.password);
+const handleSubmit = async () => {
+  if(loginForm.email && loginForm.password) {
+    await authStore.login(loginForm);
 
+    router.push('/');
+  }
 }
 
 </script>
 
 <template>
-  <form @submit.prevent="hadleSubmit">
+  <form @submit.prevent="handleSubmit">
     <h1>로그인</h1>
     <div class="group">
     <MyInput
@@ -41,15 +45,15 @@ const hadleSubmit = async () => {
     ></MyInput>
     </div>
     
-    <Mybutton
-    :btnType="'submit'"
+    <MyButton
+    :btn-type="'submit'"
     :color="'gray'"
     :size="'small'"
-    :content="'로그인'"  
-    ></Mybutton>
+    :content="'로그인'"
+    ></MyButton>
  
     <div class="sub-link">
-    <router-link to="/register" class="register">회원가입</router-link>
+    <router-link to="/registration" class="register">회원가입</router-link>
     </div>
   </form>
 
