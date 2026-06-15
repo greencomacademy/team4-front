@@ -20,6 +20,13 @@ const logout = async () => {
 }
 // Vue Router 인스턴스 가져오기
 const router = useRouter()
+
+const goBack = () => {
+  router.push('/Dashboard') // 뒤로가기 시 누르면, 대시보드 페이지로
+}
+
+
+
 </script>
 
 <template>
@@ -31,7 +38,7 @@ const router = useRouter()
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
         <span class="back-text">돌아가기</span>
-      <button @click="goBack" class="back-btn" aria-label="뒤로가기">
+      <button @click="goBack()" class="back-btn" aria-label="뒤로가기">
         &lt; 뒤로가기
       </button>
     </div>
@@ -51,6 +58,7 @@ const router = useRouter()
         <span class="profile-text">내 정보</span>
       </router-link>
       <h1 class="header-title">대충 헤더</h1>
+      <h1 class="header-title">헤더</h1> <!-- 페이지 이름이 입력됨 -->
     </div>
 
     <div class="header-right">
