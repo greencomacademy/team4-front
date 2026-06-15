@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { RouterView } from 'vue-router';
+import { RouterView, useRoute } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
 import AppHeader from './components/layout/AppHeader.vue';
 
@@ -26,7 +26,7 @@ const isSidebarOpen = ref(true);
     </div>
   </div>
   <!-- 소개홈페이지, 로그인, 점포등록화면 -->
-   <RouterView v-else/>
+
 </template>
 
 <style scoped>

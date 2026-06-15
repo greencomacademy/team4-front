@@ -21,12 +21,12 @@ const model = defineModel();
 
 <template>
 <input
-  :type="props.type"
-  :readonly="props.readonly"
-  :required="props.required"
-  :placeholder="props.placeholder"
-  :class="[props.size, props.color]"
-  v-model="model"
+ :type="props.type"
+ :readonly="props.readonly"
+ :required="props.required"
+ :placeholder="props.placeholder"
+ :class="[props.size, props.color]"
+ v-model="model"
 >
 </template>
 

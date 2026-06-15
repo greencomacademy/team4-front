@@ -17,6 +17,7 @@ const loginForm = reactive({
   password: '',
 });
 
+
 // 로그인 폼 제출 함수
 const handleSubmit = async () => {
 // 이미 로그인 요청 진행 중인 경우 추가 요청 차단
@@ -46,8 +47,7 @@ if (isLoading.value) return;
 
 <template>
 <div class="login-wrap">
-
-  <form @submit.prevent="handleSubmit">
+  <form @submit.prevent="hadleSubmit">
     <h1>로그인</h1>
     <div class="group">
     <MyInput
@@ -230,4 +230,23 @@ Sub Link Area
   color: #ff1acd;
   text-decoration: underline;
 }
+
+form {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.register {
+  font-size: 12px;
+  color: #666;
+  text-decoration: none;
+}
+
+.register:hover {
+  color: #333;
+}
+
 </style>
