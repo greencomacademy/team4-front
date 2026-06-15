@@ -12,6 +12,7 @@ const loginForm = reactive({
   password: '',
 });
 
+<<<<<<< HEAD
 const handleSubmit = async () => {
   if(loginForm.email && loginForm.password) {
     await authStore.login(loginForm);
@@ -23,6 +24,18 @@ const handleSubmit = async () => {
 
 <template>
   <form @submit.prevent="handleSubmit">
+=======
+const hadleSubmit = async () => {
+  const resultValidationEmail = loginValidator.email(loginForm.email);
+  const resultValidationPassowrd = loginValidator.password(loginForm.password);
+
+}
+
+</script>
+
+<template>
+  <form @submit.prevent="hadleSubmit">
+>>>>>>> cc26a8f (로그인 회원가입 화면)
     <h1>로그인</h1>
     <div class="group">
     <MyInput
@@ -198,4 +211,37 @@ Sub Link Area
   color: var(--primary-hover);
   text-decoration: underline;
 }
+    <Mybutton
+    :btnType="'submit'"
+    :color="'gray'"
+    :size="'small'"
+    :content="'로그인'"  
+    ></Mybutton>
+ 
+    <div class="sub-link">
+    <router-link to="/register" class="register">회원가입</router-link>
+    </div>
+  </form>
+
+</template>
+
+<style scoped>
+form {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.register {
+  font-size: 12px;
+  color: #666;
+  text-decoration: none;
+}
+
+.register:hover {
+  color: #333;
+}
+
 </style>

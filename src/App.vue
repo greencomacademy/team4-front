@@ -1,7 +1,8 @@
 <script setup>
 import { ref } from 'vue';
-import { RouterView } from 'vue-router';
+import { RouterView, useRoute } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
+<<<<<<< HEAD
 import AppHeader from './components/layout/AppHeader.vue';
 
 const isSidebarOpen = ref(true);
@@ -63,5 +64,20 @@ const isSidebarOpen = ref(true);
 .page-area {
   flex: 1;
   overflow-y: auto;
+=======
+
+const route = useRoute();
+</script>
+
+<template>
+  <RouterView />
+</template>
+
+<style scoped>
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+>>>>>>> cc26a8f (로그인 회원가입 화면)
 }
 </style>

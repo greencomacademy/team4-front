@@ -5,6 +5,17 @@ const router = useRouter()
 
 const goBack = () => {
   router.push('/Dashboard') // 뒤로가기 시 누르면, 대시보드 페이지로
+const redirectLogin = () => {
+  router.push('/login');
+}
+
+const redirectRegistration = () => {
+  router.push('/registration');
+}
+
+const logout = async () => {
+  await authStore.logout();
+  router.replace('/');
 }
 </script>
 
