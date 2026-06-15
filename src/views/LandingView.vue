@@ -1,3 +1,14 @@
+<script setup>
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+// 로그인/회원가입 페이지로 이동하는 함수
+const goToAuth = () => {
+  router.push('/auth');
+};
+</script>
+
 <template>
   <div class="landing-wrapper">
     <nav class="landing-nav">
@@ -37,17 +48,6 @@
     </section>
   </div>
 </template>
-
-<script setup>
-import { useRouter } from 'vue-router';
-
-const router = useRouter();
-
-// 로그인/회원가입 페이지로 이동하는 함수
-const goToAuth = () => {
-  router.push('/auth');
-};
-</script>
 
 <style scoped>
 /* 전체 배경을 흰색으로 덮기 */
