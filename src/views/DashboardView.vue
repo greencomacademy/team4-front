@@ -2,7 +2,6 @@
 DashboardView.vue: '오늘 운영 대시보드' 탭입니다. 
 전체 주문 요약, 플랫폼 순위, 오늘의 운영 분석 메시지 등 가게의 전반적인 현황을 한눈에 보여주는 메인 화면입니다.
 -->
-
 <template>
   <div class="dashboard-wrapper">
     <header class="top-header">
@@ -541,4 +540,5 @@ const tableData = ref([
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
 }
+
 </style>
