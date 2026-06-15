@@ -4,6 +4,7 @@ import DashboardView from '../views/DashboardView.vue'
 import Registration from '../views/auth/Registration.vue'
 import { useAuthStore } from '../store/useAuthStore.js'
 import App from '../App.vue'
+import PlatformsView from '../views/PlatformsView.vue'
 
 const setMeta = (isAuthenticated, isGestOnly) => {
   return {
@@ -36,7 +37,12 @@ const routes = [
     path: '/dashboard',
     component: DashboardView,
     meta: setMeta(true, false),
-  }
+  },
+  {
+      path: '/',
+      name: 'platform',
+      component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
+    }
 ]
 
 const router = createRouter({
@@ -59,4 +65,4 @@ router.beforeEach((to, from) => {
 })
 
 
-export default router
+export default router;
