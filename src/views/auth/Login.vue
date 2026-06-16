@@ -1,7 +1,6 @@
 <script setup>
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import loginValidator from '../../utils/validator/auth/loginValidator';
 import MyInput from '../../components/input/MyInput.vue';
 import MyButton from '../../components/button/MyButton.vue';
 import { useAuthStore } from '../../store/useAuthStore.js';
@@ -9,16 +8,31 @@ import { useAuthStore } from '../../store/useAuthStore.js';
 const router = useRouter();
 const authStore = useAuthStore();
 
+const isLoading = ref(false);
+
 const loginForm = reactive({
   email: '',
   password: '',
 });
 
 const handleSubmit = async () => {
-  if(loginForm.email && loginForm.password) {
-    await authStore.login(loginForm);
+if (isLoading.value) return;
 
-    router.push('/');
+  try {
+    if(loginForm.email && loginForm.password) {
+      isLoading.value = true;
+
+      await authStore.login(loginForm);
+  
+      router.push('/');
+    }
+  } catch (error) {
+      const message = error.response?.data?.data || error.response?.data?.message || '로그인에 실패했습니다.';
+
+      alert(message);
+      return;
+  } finally {
+    isLoading.value = false;
   }
 }
 
