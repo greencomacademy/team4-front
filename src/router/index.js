@@ -5,6 +5,7 @@ import Registration from '../views/auth/Registration.vue'
 import { useAuthStore } from '../store/useAuthStore.js'
 import App from '../App.vue'
 import PlatformsView from '../views/PlatformsView.vue'
+import MockDataView from '../views/MockDataView.vue'
 
 const setMeta = (isAuthenticated, isGestOnly) => {
   return {
@@ -28,6 +29,11 @@ const routes = [
     path: '/dashboard',
     component: DashboardView,
     meta: setMeta(true, false),
+  },
+  {
+    path: '/mockdata',
+    component: MockDataView,
+    meta: setMeta(false, false),
   },
   {
     path: '/',
