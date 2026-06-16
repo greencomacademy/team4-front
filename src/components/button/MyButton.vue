@@ -60,4 +60,14 @@ button {
   background-color:var(--personal-color-white);
   color: var(--personal-color-black);
 }
+
+.blue {
+  background-color:var(--personal-color-blue);
+  color: var(--personal-color-white);
+}
+
+.red {
+  background-color:var(--personal-color-red);
+  color: var(--personal-color-white);
+}
 </style>

@@ -8,22 +8,29 @@ import { useAuthStore } from '../../store/useAuthStore.js';
 const router = useRouter();
 const authStore = useAuthStore();
 
+// 로그인 요청 중 중복 클릭을 방지하기 위한 로딩 상태 관리
 const isLoading = ref(false);
 
+// 입력한 이메일 비밀번호를 저장
 const loginForm = reactive({
   email: '',
   password: '',
 });
 
+// 로그인 폼 제출 함수
 const handleSubmit = async () => {
+// 이미 로그인 요청 진행 중인 경우 추가 요청 차단
 if (isLoading.value) return;
 
   try {
+    // 이메일 비밀번호 모두 입력됐을 때만 로그인 성공
     if(loginForm.email && loginForm.password) {
-      isLoading.value = true;
+      isLoading.value = true; 
 
+      // 스토어의 로그인 액션 호출
       await authStore.login(loginForm);
-  
+      
+      // 로그인 성공시 메인 페이지로 페이지 이동
       router.push('/');
     }
   } catch (error) {
