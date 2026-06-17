@@ -29,19 +29,22 @@ button {
 }
 
 .big {
-  width: 350px;
+  width: 100%;
+  max-width: 350px;
   height: 45px;
   font-size: 20px;
 }
 
 .middle {
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
   height: 70px;
   font-size: 40px;
 }
 
 .small {
-  width: 90px;
+  width: 100%;
+  max-width: 90px;  
   height: 45px;
   font-size: 20px;
 }

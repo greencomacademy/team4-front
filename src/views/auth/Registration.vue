@@ -56,7 +56,7 @@ try {
 
     <MyButton
     :btn-type="'submit'"
-    :color="'gray'"
+    :color="'blue'"
     :size="'small'"
     :content="'회원가입'"  
     ></MyButton>

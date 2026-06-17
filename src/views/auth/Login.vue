@@ -46,6 +46,8 @@ if (isLoading.value) return;
 </script>
 
 <template>
+<div class="login-wrap">
+
   <form @submit.prevent="handleSubmit">
     <h1>로그인</h1>
     <div class="group">
@@ -68,15 +70,17 @@ if (isLoading.value) return;
     
     <MyButton
     :btn-type="'submit'"
-    :color="'gray'"
+    :color="'blue'"
     :size="'small'"
     :content="'로그인'"
     ></MyButton>
  
-    <div class="sub-link">
-    <router-link to="/registration" class="register">회원가입</router-link>
-    </div>
   </form>
+
+  <div class="sub-link">
+  <router-link to="/registration" class="register">회원가입</router-link>
+  </div>
+</div>
 
 </template>
 
@@ -90,13 +94,22 @@ form {
 }
 
 .register {
-  font-size: 12px;
+  font-size: 14px;
   color: #666;
   text-decoration: none;
 }
 
+.sub-link {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
 .register:hover {
-  color: #333;
+  color: #ff1acd;
+  text-decoration: underline;
 }
 
 </style>
