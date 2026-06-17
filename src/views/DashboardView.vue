@@ -540,4 +540,5 @@ const tableData = ref([
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
 }
+
 </style>

@@ -29,7 +29,6 @@ const isDashboardLayout = computed(() => route.meta.isAuthenticated === true);
     
     <div class="content-area">
       <AppHeader v-if="!isLandingPage" class="header-area temp-header">
-
       </AppHeader>
 
       <main class="page-area" :class="{ 'no-padding': isLandingPage }">
