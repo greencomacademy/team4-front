@@ -3,25 +3,47 @@ import { ref } from 'vue';
 import MyButton from '../components/button/MyButton.vue';
 import axios from 'axios';
 
+// ----------------------
+// 화면 상태 관리
+// ----------------------
+
+// 발표 시연용 카드 지연 테스트 수량 저장 변수
 const delayCnt = ref(1);
 
+// 일반 Mock 주문 카드 생산 수량 저장 변수
+const generalCnt = ref(1); 
+
+// 일반 Mock 주문 카드 선택된 시나리오 저장
+const generalScenario = ref('MIXED');
+
+// ----------------------
+// 화면 제어 증/감
+// ----------------------
+
+// 지연 테스트 수량 증가 최대 50개
 const increaseDelayOrder = () => {
   if (delayCnt.value < 50) {
     delayCnt.value++;
   }
 };
 
+// 지연 테스트 수량 감소 최소 1개
 const decreaseDelayOrder = () => {
   if (delayCnt.value > 1) {
     delayCnt.value--;
   }
 };
 
+// ----------------------
+// 백엔드 연동 axios
+// ----------------------
+
+// 일반 Mock 주문 데이터: 화면에서 선택한 문자열과 입력한 수량 전송
 const createBaseMockData = async () => {
   try {
-    await axios.post('/orders/mock', {
-      scenario: generalScenario.value, 
-      count: generalCnt.value
+    await axios.post('/api/mock-data/orders', {
+      scenario: generalScenario.value, // select 박스 Enum 값
+      count: generalCnt.value // input 창 입력된 수량
     })
     alert(`${generalScenario.value} 시나리오 주문 ${generalCnt.value}개가 성공적으로 생성되었습니다.`);
   } catch (error) {
@@ -29,34 +51,38 @@ const createBaseMockData = async () => {
   }
 };
 
+// 발표 시연용 주문 1건 생성(단체/프리미엄): 버튼 클릭 시 GROUP/PREMIUM 1개 생성
 const createScenario = async (scenarioType) => {
   try {
-    await axios.post('/orders/mock', { scenario: scenarioType, count: 1 });
+    await axios.post('/api/mock-data/orders', { scenario: scenarioType, count: 1 });
     alert(`${scenarioType} 주문이 성공적으로 생성되었습니다.`);
   } catch (error) {
     handleError(error);
   }
 };
 
+// 발표 시연용 지연 테스트 주문 생성: DELAY_TEST
 const createDelayOrder = async () => {
   try {
-    await axios.post('/orders/mock', { scenario: 'DELAY', count: delayCnt.value });
+    await axios.post('/api/mock-data/orders', { scenario: 'DELAY_TEST', count: delayCnt.value });
     alert(`지연 테스트 주문 ${delayCnt.value}개가 성공적으로 생성되었습니다.`);
   } catch (error) {
     handleError(error);
   }
 };
 
+// 로그인한 매장의 모든 Mock 주문 일괄 삭제
 const deleteMockOrders = async () => {
   if (!confirm('정말 로그인한 매장의 모든 Mock 주문을 삭제하시겠습니까?')) return;
   try {
-    await axios.delete('/orders/mock');
+    await axios.delete('/api/mock-data/orders');
     alert('Mock 주문이 완전히 삭제되었습니다.');
   } catch (error) {
     handleError(error);
   }
 };
 
+// 에러
 const handleError = (error) => {
   if (error.response && error.response.data) {
     const errorCode = error.response.data.code;
@@ -73,7 +99,7 @@ const handleError = (error) => {
       return;
     }
   }
-  alert('요청 중 오류가 발생했습니다: ' + error.message);
+  alert('요청 중 오류가 발생했습니다: ' + (error.response?.data?.data || error.response?.data?.message));
 };
 </script>
 
@@ -117,7 +143,7 @@ const handleError = (error) => {
           <option value="MIXED">MIXED</option>
           <option value="GROUP">GROUP</option>
           <option value="PREMIUM">PREMIUM</option>
-          <option value="DELAY">DELAY</option>
+          <option value="DELAY_TEST">DELAY</option>
         </select>
       </div>
 
@@ -126,7 +152,7 @@ const handleError = (error) => {
         :color="'blue'"
         :size="'big'"
         :content="'Mock 주문 데이터 생성'"
-        @click="createScenario('MIXED')"
+        @click="createBaseMockData"
       /> 
     </section>
 
@@ -194,6 +220,8 @@ const handleError = (error) => {
 </template>
 
 <style scoped>
+
+/* 전체 배경 */
 .mock-wrapper {
   background-color: #f4f6fc;
   min-height: 100vh;
@@ -202,6 +230,7 @@ const handleError = (error) => {
   color: #333;
 }
 
+/* 카드 정렬 */
 .content-area {
   margin: 10px;
   display: flex;
@@ -210,6 +239,7 @@ const handleError = (error) => {
   align-items: flex-start;
 }
 
+/* 개별 카드 디자인 */
 .card {
   background: white;
   border-radius: 10px;
@@ -220,17 +250,21 @@ const handleError = (error) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* 카드 내부 타이틀 */
 .card-header {
   margin: 20px;
 }
 
+/* 카운터 컨트롤 상자 정렬 */
 .counter-control {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   margin-bottom: 10px;
 }
 
+/* 카운터 증감 버튼 */
 .step-btn {
   width: 32px;
   height: 32px;
@@ -246,6 +280,7 @@ const handleError = (error) => {
   background: #e2e8f0;
 }
 
+/* 입력 필드 스타일 */
 .input-field {
   width: 140px;
   text-align: center;
@@ -255,6 +290,7 @@ const handleError = (error) => {
   font-size: 16px;
 }
 
+/* 카드 내 상하 구분 점선 */
 .input-group {
   display: flex;
   flex-direction: column;
@@ -272,6 +308,7 @@ const handleError = (error) => {
   color: #333;
 }
 
+/* 지연 테스트 카운터 점선 */
 .cnt-group {
   display: flex;
   flex-direction: column;

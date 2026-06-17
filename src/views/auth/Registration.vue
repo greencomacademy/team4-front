@@ -17,10 +17,10 @@ const registerForm = reactive({
 });
 
 const handleRegister = async () => {
-  if (isLoading.value) return;
-  
+if (isLoading.value) return;
+
 if(registerForm.password !== registerForm.passwordChk) {
-alert('비밀번호가 서로 일치하지 않습니다.');
+  alert('비밀번호가 서로 일치하지 않습니다.');
   return;
 }
 try {
@@ -31,15 +31,13 @@ try {
   router.push('/login');
 
 } catch (error) {
-    const message =
-      error.response?.data?.data || error.response?.data?.message || "회원가입에 실패했습니다.";
+    const message = error.response?.data?.data || error.response?.data?.message || "회원가입에 실패했습니다.";
 
-      alert(message)
-
-    } finally {
+    alert(message);
+  } finally {
       isLoading.value = false;
-    }
   }
+}
 
 </script>
 

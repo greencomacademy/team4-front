@@ -29,7 +29,7 @@ button {
 }
 
 .big {
-  width: 100%;
+  width: 90%;
   max-width: 350px;
   height: 45px;
   font-size: 20px;
