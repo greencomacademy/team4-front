@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { ref } from 'vue';
 import { RouterView } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
@@ -17,4 +17,4 @@ import BaseToast from './components/ui/BaseToast.vue';
   margin: 0;
   box-sizing: border-box;
 }
-</style>
+</style> -->
