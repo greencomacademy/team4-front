@@ -17,6 +17,10 @@ const setMeta = (isAuthenticated, isGestOnly) => {
 
 const routes = [
   {
+    path: '/auth',
+    component: App
+  },
+  {
     path: '/login',
     component: Login,
     meta: setMeta(false, true),
@@ -36,11 +40,11 @@ const routes = [
     component: MockDataView,
     meta: setMeta(false, false),
   },
-  // {
-  //   path: '/',
-  //   name: 'platform',
-  //   component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
-  //   },
+  {
+    path: '/',
+    name: 'platform',
+    component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
+    },
     {
     path: '/',
     name: 'landing',
