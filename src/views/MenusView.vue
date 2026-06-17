@@ -8,5 +8,13 @@ MenusView.vue: '메뉴 수익성 설정' 탭입니다.
 </script>
 
 <template>
-
+  <div class="menus-container">
+    <h1>메뉴 수익성 설정</h1>
+  </div>
 </template>
+
+<style scoped>
+.menus-container {
+  padding: 20px;
+}
+</style>

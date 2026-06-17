@@ -8,5 +8,13 @@ StoreView.vue: '매장 관리' 탭입니다.
 </script>
 
 <template>
-
+  <div class="store-container">
+    <h1>매장 관리</h1>
+  </div>
 </template>
+
+<style scoped>
+.store-container {
+  padding: 20px;
+}
+</style>

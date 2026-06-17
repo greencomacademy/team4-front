@@ -3,9 +3,11 @@ import { reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import loginValidator from '../../utils/validator/auth/loginValidator';
 import MyInput from '../../components/input/MyInput.vue';
-import Mybutton from '../../components/button/Mybutton.vue';
+import MyButton from '../../components/button/MyButton.vue';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const loginForm = reactive({
   email: '',

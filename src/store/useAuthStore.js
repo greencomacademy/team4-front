@@ -73,5 +73,3 @@ export const useAuthStore = defineStore('auth', () => {
     registration,
   }
 });
-
-export default useAuthStore;
