@@ -29,19 +29,22 @@ button {
 }
 
 .big {
-  width: 350px;
+  width: 90%;
+  max-width: 350px;
   height: 45px;
   font-size: 20px;
 }
 
 .middle {
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
   height: 70px;
   font-size: 40px;
 }
 
 .small {
-  width: 90px;
+  width: 100%;
+  max-width: 90px;  
   height: 45px;
   font-size: 20px;
 }
@@ -59,5 +62,15 @@ button {
 .white {
   background-color:var(--personal-color-white);
   color: var(--personal-color-black);
+}
+
+.blue {
+  background-color:var(--personal-color-blue);
+  color: var(--personal-color-white);
+}
+
+.red {
+  background-color:var(--personal-color-red);
+  color: var(--personal-color-white);
 }
 </style>
