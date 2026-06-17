@@ -50,7 +50,7 @@ const handleSubmit = async () => {
     :size="'small'"
     :content="'로그인'"
     ></MyButton>
- 
+
     <div class="sub-link">
     <router-link to="/registration" class="register">회원가입</router-link>
     </div>

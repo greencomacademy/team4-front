@@ -3,9 +3,8 @@ import { reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import MyInput from '../../components/input/MyInput.vue';
 import MyButton from '../../components/button/MyButton.vue';
-import MyInput from '../../components/input/MyInput.vue';
-import Mybutton from '../../components/button/Mybutton.vue';
-sterForm = reactive({
+
+const registerForm = reactive({
   businessName: '',
   businessType: '',
   businessNumber: '',
@@ -23,20 +22,12 @@ const handleRegister = () => {
 <template>
   <div class="register-container">
     <form @submit.prevent="hadleRegister" class="register-form">
-
-      <h1>회원가입</h1>
-      <div class="group">
-        <MyInput type="text" v-model="registerForm.businessName" placeholder="업소명" required></MyInput>
-        <MyInput type="text" v-model="registerForm.businessType" placeholder="업종" required></MyInput>
-        <MyInput type="text" v-model="registerForm.businessNumber" placeholder="사업장 등록번호" required></MyInput>
-      </div>
-
-    <Mybutton
+    <MyButton
     :btnType="'submit'"
     :color="'gray'"
     :size="'small'"
     :content="'회원가입'"  
-    ></Mybutton>
+    ></MyButton>
       
   <div class="auth-wrapper">
     <div class="auth-card register-card">
@@ -85,9 +76,7 @@ const handleRegister = () => {
       </form>
     </div>
 </div>
-
-
-    </form>
+</form>
 
 
 

@@ -7,22 +7,6 @@ import router from './router' // 1. router 폴더에서 라우터 설정을 불�
 import './assets/main.css'
 import { createPinia } from 'pinia'
 
-createApp(App)
-.use(createPinia())
-.use(router)
-
-import { createPinia } from 'pinia'
-
-createApp(App)
-  .use(router)
-  .use(createPinia())
-  .mount('#app')
-import { createPinia } from 'pinia';
-
-import App from './App.vue'
-import router from './router' // 1. router 폴더에서 라우터 설정을 불러옵니다.
-import './style.css';
-
 const app = createApp(App)
 const pinia = createPinia()
 
