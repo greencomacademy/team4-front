@@ -1,10 +1,11 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import Login from '../views/auth/Login.vue'
-import DashboardView from '../views/DashboardView.vue'
-import Registration from '../views/auth/Registration.vue'
-import { useAuthStore } from '../store/useAuthStore.js'
-import App from '../App.vue'
-import PlatformsView from '../views/PlatformsView.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import Login from '../views/auth/Login.vue';
+import DashboardView from '../views/DashboardView.vue';
+import Registration from '../views/auth/Registration.vue';
+import { useAuthStore } from '../store/useAuthStore.js';
+import App from '../App.vue';
+import PlatformsView from '../views/PlatformsView.vue';
+import StoreView from '../views/StoreView.vue';
 
 const setMeta = (isAuthenticated, isGestOnly) => {
   return {
@@ -39,10 +40,15 @@ const routes = [
     meta: setMeta(true, false),
   },
   {
-      path: '/',
-      name: 'platform',
-      component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
-    }
+    path: '/',
+    name: 'platform',
+    component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
+  },
+  {
+    path: '/store',
+    name: 'store',
+    component: StoreView // 주소가 '/store' 일 때 스토어 페이지를 띄웁니다.
+  }
 ]
 
 const router = createRouter({

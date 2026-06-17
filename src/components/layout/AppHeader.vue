@@ -5,14 +5,14 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const goBack = () => {
-  router.push('/Dashboard') // 뒤로가기 시 누르면, 대시보드 페이지로
+  router.push('/dashboard') // 뒤로가기 시 누르면, 대시보드 페이지로
 }
 </script>
 
 <template>
   <header class="main-header">
     <div class="header-left">
-      <button @click="goBack()" class="back-btn" aria-label="뒤로가기">
+      <button @click="goBack" class="back-btn" aria-label="뒤로가기">
         &lt; 뒤로가기
       </button>
     </div>
