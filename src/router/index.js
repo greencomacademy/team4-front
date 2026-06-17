@@ -52,79 +52,10 @@ const routes = [
     }
 ]
 
-const setMeta = (isAuthenticated, isGestOnly) => {
-  return {
-    isAuthenticated,
-    isGestOnly,
-  }
-}
-
-  const routes = [
-    // {
-    //   path: '/',
-    //   redirect: '/main', 
-    //   meta: setMeta(false, false),
-    // },
-    // {
-    //   path: '/main',
-    //   component: Main,
-    //   meta: setMeta(false, true),
-    // },
-
-
-    // auth
-    {
-      path: '/login',
-      component: Login,
-      meta: setMeta(false, true),
-    },
-
-    {
-      path: '/register',
-      component: Register,
-      meta: setMeta(false, true),
-    },
-
-
-  ]
 const router = createRouter({
   history: createWebHistory(),
   routes,
 });
-  routes: [
-    {
-      path:'/',
-      name:'home',
-      component:HomeView,
-      meta:{
-        layout: 'public',
-      }
-    },
-    {
-      path:'/login',
-      name:'login',
-      component:LoginView,
-      meta:{
-        layout: 'public',
-      }
-    },
-    {
-      path:'/signup',
-      name:'signup',
-      component:SignupView,
-      meta:{
-        layout: 'public',
-      }
-    },
-    {
-      path:'/dashboard',
-      name:'dashboard',
-      component:DashboardView,
-      meta:{
-        layout: 'dashboard'
-      }
-    }
-  ]
 
 router.beforeEach((to, from) => {
   const authStore = useAuthStore();
@@ -132,8 +63,8 @@ router.beforeEach((to, from) => {
 
   if (to.meta.isAuthenticated && !isUserAuthenticated) {
     return '/';
-  } 
-  if (to.meta.isGestOnly && isUserAuthenticated) {
+  }
+  if (to.meta.isGuestOnly && isUserAuthenticated) {
     return '/platforms';
   }
 });

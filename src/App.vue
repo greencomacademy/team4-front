@@ -3,7 +3,6 @@ import { ref, computed } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
 import AppHeader from './components/layout/AppHeader.vue';
-import AppHeader from './components/layout/AppHeader.vue';
 
 // 🚨 파일이 아직 없으므로 아래 두 줄은 반드시 주석 처리해야 화면이 뜹니다!
 // import AppHeader from './components/layout/AppHeader.vue'; 
@@ -14,6 +13,9 @@ const isSidebarOpen = ref(true);
 
 // 현재 주소가 '/' (랜딩 페이지)인지 감지하는 변수
 const isLandingPage = computed(() => route.path === '/');
+
+// 대시보드 레이아웃이 필요한 페이지인지 감지
+const isDashboardLayout = computed(() => route.meta.isAuthenticated === true);
 </script>
 
 <template>
