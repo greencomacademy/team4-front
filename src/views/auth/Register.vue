@@ -1,20 +1,11 @@
 <script setup>
 import { reactive } from 'vue';
-<<<<<<< HEAD
 import { useRouter } from 'vue-router';
 import MyInput from '../../components/input/MyInput.vue';
-<<<<<<< HEAD:src/views/auth/Register.vue
-import Mybutton from '../../components/button/Mybutton.vue';
-=======
 import MyButton from '../../components/button/MyButton.vue';
->>>>>>> 880d3db (각 페이지 디자인 수정, 라우터 경로 재조정):src/views/auth/Registration.vue
-=======
 import MyInput from '../../components/input/MyInput.vue';
 import Mybutton from '../../components/button/Mybutton.vue';
->>>>>>> cc26a8f (로그인 회원가입 화면)
-
-
-const registerForm = reactive({
+sterForm = reactive({
   businessName: '',
   businessType: '',
   businessNumber: '',
@@ -27,17 +18,9 @@ const registerForm = reactive({
 const handleRegister = () => {
 
 }
-<<<<<<< HEAD
 </script>
 
 <template>
-<<<<<<< HEAD:src/views/auth/Register.vue
-=======
-
-</script>
-
-<template>
->>>>>>> cc26a8f (로그인 회원가입 화면)
   <div class="register-container">
     <form @submit.prevent="hadleRegister" class="register-form">
 
@@ -55,8 +38,6 @@ const handleRegister = () => {
     :content="'회원가입'"  
     ></Mybutton>
       
-<<<<<<< HEAD
-=======
   <div class="auth-wrapper">
     <div class="auth-card register-card">
       
@@ -85,7 +66,6 @@ const handleRegister = () => {
             </div>
           </div>
         </div>
->>>>>>> 880d3db (각 페이지 디자인 수정, 라우터 경로 재조정):src/views/auth/Registration.vue
 
         <div class="btn-group">
           <MyButton
@@ -104,18 +84,17 @@ const handleRegister = () => {
 
       </form>
     </div>
-=======
+</div>
 
 
     </form>
 
 
->>>>>>> cc26a8f (로그인 회원가입 화면)
+
   </div>
 </template>
 
 <style scoped>
-<<<<<<< HEAD
 /* ========================================
 Design System Variables
 ======================================== */
@@ -298,23 +277,5 @@ Sub Link Area
 .login-link:hover {
   color: var(--primary-hover);
   text-decoration: underline;
-=======
-form {
-  padding: 20px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.login {
-  font-size: 12px;
-  color: #666;
-  text-decoration: none;
-}
-
-.login:hover {
-  color: #333;
->>>>>>> cc26a8f (로그인 회원가입 화면)
 }
 </style>

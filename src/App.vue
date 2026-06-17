@@ -20,7 +20,6 @@ const isLandingPage = computed(() => route.path === '/');
   <!-- 로그인 후 보여줄 대시보드화면 -->
   <div class="app-wrapper" v-if="isDashboardLayout">
     <AppSidebar
-      v-if="!isLandingPage"
       class="sidebar-area" 
       :is-open="isSidebarOpen"
       @toggle="isSidebarOpen = !isSidebarOpen" 

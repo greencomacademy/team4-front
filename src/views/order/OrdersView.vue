@@ -8,5 +8,13 @@ OrdersView.vue: '주문 운영 현황' 탭입니다.
 </script>
 
 <template>
-
+  <div class="orders-container">
+    <h1>주문 운영 현황</h1>
+  </div>
 </template>
+
+<style scoped>
+.orders-container {
+  padding: 20px;
+}
+</style>

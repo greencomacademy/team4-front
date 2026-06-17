@@ -8,5 +8,13 @@ MockDataView.vue: 'Mock 데이터' 탭입니다.
 </script>
 
 <template>
-
+  <div class="mock-data-container">
+    <h1>Mock 데이터 관리</h1>
+  </div>
 </template>
+
+<style scoped>
+.mock-data-container {
+  padding: 20px;
+}
+</style>
