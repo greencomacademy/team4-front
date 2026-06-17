@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { ref } from 'vue';
 import { RouterView } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
@@ -9,26 +9,7 @@ const isSidebarOpen = ref(true);
 </script>
 
 <template>
-  <BaseToast />
-  <div class="app-wrapper">
-    
-    <AppSidebar
-      class="sidebar-area" 
-      :is-open="isSidebarOpen"
-      @toggle="isSidebarOpen = !isSidebarOpen" 
-    />
-    
-    <div class="content-area">
-      <AppHeader
-        class="header-area" 
-        @toggle-menu="isSidebarOpen = !isSidebarOpen" 
-      />
-      <main class="page-area">
         <RouterView />
-      </main>
-    </div>
-    
-  </div>
 </template>
 
 <style scoped>
@@ -64,4 +45,4 @@ const isSidebarOpen = ref(true);
   padding: 24px;
   overflow-y: auto;
 }
-</style>
+</style> -->
