@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/auth/Login.vue'
-import DashboardView from '../views/DashboardView.vue'
+import DashboardView from '../views/dashboard/DashboardView.vue'
 import Registration from '../views/auth/Registration.vue'
-import { useAuthStore } from '../store/useAuthStore.js'
+import { useAuthStore } from '../store/store/useStoreStore.js'
 import App from '../App.vue'
-import PlatformsView from '../views/PlatformsView.vue'
-import MockDataView from '../views/MockDataView.vue'
+import PlatformsView from '../views/platform/PlatformsView.vue'
+import MockDataView from '../views/mock/MockDataView.vue'
 import LandingView from '../views/LandingView.vue'
 
 const setMeta = (isAuthenticated, isGestOnly) => {
