@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
-import MyButton from '../components/button/MyButton.vue';
 import axios from 'axios';
+import MyButton from '../../components/button/MyButton.vue';
 
 // ----------------------
 // 화면 상태 관리
