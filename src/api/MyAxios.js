@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useAuthStore } from "../store/useAuthStore.js";
+import { useAuthStore } from "../store/auth/useAuthStore";
 import { jwtDecode } from "jwt-decode";
 import dayjs from "dayjs";
 
