@@ -1,10 +1,75 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import Login from '../views/auth/Login.vue'
+import DashboardView from '../views/DashboardView.vue'
+import Registration from '../views/auth/Registration.vue'
+import { useAuthStore } from '../store/useAuthStore.js'
+import App from '../App.vue'
+import PlatformsView from '../views/PlatformsView.vue'
+import MockDataView from '../views/MockDataView.vue'
+import LandingView from '../views/LandingView.vue'
+
+const setMeta = (isAuthenticated, isGestOnly) => {
+  return {
+    isAuthenticated,
+    isGestOnly,
+  }
+}
+
+const routes = [
+  {
+    path: '/auth',
+    component: App
+  },
+  {
+    path: '/login',
+    component: Login,
+    meta: setMeta(false, true),
+  },
+  {
+    path: '/registration',
+    component: Registration,
+    meta: setMeta(false, true),
+  },
+  {
+    path: '/dashboard',
+    component: DashboardView,
+    meta: setMeta(true, false),
+  },
+  {
+    path: '/mockdata',
+    component: MockDataView,
+    meta: setMeta(false, false),
+  },
+  {
+    path: '/',
+    name: 'platform',
+    component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
+    },
+    {
+    path: '/',
+    name: 'landing',
+    component: LandingView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
+    }
+]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes: [
-    // 지금은 빈 배열로 두어도 에러가 사라집니다. 나중에 3명이서 페이지를 붙일 때 여기에 추가합니다.
-  ]
+  routes,
 })
 
-export default router
+router.beforeEach((to, from) => {
+
+  const authStore = useAuthStore();
+
+  const isUserAuthenticated = authStore.isLoggedIn
+
+  if (to.meta.isAuthenticated && !isUserAuthenticated) {
+    return '/login';
+  } 
+  if (to.meta.isGestOnly && isUserAuthenticated) {
+    return '/';
+  }
+})
+
+
+export default router;
