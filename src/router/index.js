@@ -1,14 +1,13 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import Login from '../views/auth/Login.vue'
-import DashboardView from '../views/dashboard/DashboardView.vue'
-import Registration from '../views/auth/Registration.vue'
-import { useAuthStore } from '../store/store/useStoreStore.js'
-import App from '../App.vue'
-import PlatformsView from '../views/platform/PlatformsView.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import Login from '../views/auth/Login.vue';
+import DashboardView from '../views/dashboard/DashboardView.vue';
+import Registration from '../views/auth/Registration.vue';
+import { useAuthStore } from '../store/auth/useAuthStore.js';
+import App from '../App.vue';
+import PlatformsView from '../views/platform/PlatformsView.vue';
+import StoreView from '../views/store/StoreView.vue';
 import MockDataView from '../views/mock/MockDataView.vue'
 import LandingView from '../views/LandingView.vue'
-import StoreView from '../views/store/StoreView.vue'
-
 
 const setMeta = (isAuthenticated, isGestOnly) => {
   return {
@@ -38,25 +37,15 @@ const routes = [
     meta: setMeta(true, false),
   },
   {
-    path: '/mockdata',
-    component: MockDataView,
-    meta: setMeta(false, false),
-  },
-  {
     path: '/',
     name: 'platform',
     component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
-    },
-    {
-    path: '/',
-    name: 'landing',
-    component: LandingView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
-    },
-    {
-      path: '/store',
-      name: 'store',
-      component: StoreView // 주소가 '/store' 일 때 스토어 페이지를 띄웁니다.
-    }
+  },
+  {
+    path: '/store',
+    name: 'store',
+    component: StoreView // 주소가 '/store' 일 때 스토어 페이지를 띄웁니다.
+  }
 ]
 
 const router = createRouter({

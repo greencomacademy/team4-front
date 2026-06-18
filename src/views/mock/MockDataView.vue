@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import MyButton from '../components/button/MyButton.vue';
+import MyButton from '../../components/button/MyButton.vue'; 
 import axios from 'axios';
 
 // ----------------------
