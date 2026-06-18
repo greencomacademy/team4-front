@@ -3,7 +3,7 @@ import { reactive, ref } from 'vue';
 import MyInput from '../../components/input/MyInput.vue';
 import MyButton from '../../components/button/MyButton.vue';
 import { useRouter } from 'vue-router';
-import useAuthStore from '../../store/useAuthStore.js';
+import { useAuthStore } from '../../store/auth/useAuthStore.js';
 
 const router = useRouter();
 const authStore = useAuthStore();
