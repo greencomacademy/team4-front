@@ -1,3 +1,6 @@
+import LandingView from '../views/LandingView.vue';
+import PlatformsView from '../views/PlatformsView.vue';
+import { useAuthStore } from '../store/useAuthStore';
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/auth/Login.vue'
 import DashboardView from '../views/dashboard/DashboardView.vue'
@@ -17,21 +20,32 @@ const setMeta = (isAuthenticated, isGestOnly) => {
 
 const routes = [
   {
-    path: '/auth',
-    component: App
+    path: '/',
+    name: 'landing',
+    component: LandingView,
+    meta: { isGuestOnly: true }
   },
   {
     path: '/login',
+    name: 'login',
     component: Login,
-    meta: setMeta(false, true),
+    meta: { isGuestOnly: true }
   },
   {
     path: '/registration',
-    component: Registration,
-    meta: setMeta(false, true),
+    name: 'registration',
+    component: Register,
+    meta: { isGuestOnly: true }
+  },
+  {
+    path: '/signup',
+    name: 'signup',
+    component: SignupView,
+    meta: { isGuestOnly: true }
   },
   {
     path: '/dashboard',
+    name: 'dashboard',
     component: DashboardView,
     meta: setMeta(true, false),
   },
@@ -55,21 +69,18 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-})
+});
 
 router.beforeEach((to, from) => {
-
   const authStore = useAuthStore();
-
-  const isUserAuthenticated = authStore.isLoggedIn
+  const isUserAuthenticated = authStore.isLoggedIn;
 
   if (to.meta.isAuthenticated && !isUserAuthenticated) {
-    return '/login';
-  } 
-  if (to.meta.isGestOnly && isUserAuthenticated) {
     return '/';
   }
-})
-
+  if (to.meta.isGuestOnly && isUserAuthenticated) {
+    return '/platforms';
+  }
+});
 
 export default router;

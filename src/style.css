@@ -1,0 +1,12 @@
+@font-face {
+  font-family: 'BMDOHYEON_ttf';
+  src: url('/fonts/BMDOHYEON_ttf.ttf') format('truetype'); 
+  font-style: normal;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'BMDOHYEON_ttf';
+}
