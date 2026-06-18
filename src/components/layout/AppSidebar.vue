@@ -12,14 +12,32 @@ defineProps({
 // App.vue로 이벤트를 쏘기 위한 준비
 const emit = defineEmits(['toggle']);
 
-const navItems = ref([
-    '오늘 운영 대시보드',
-    '주문 운영 현황',
-    'Mock 데이터',
-    '메뉴 수익성 설정',
-    '플랫폼 정산 조건',
-    '매장 관리'
-]);
+const navItems = [
+  {
+    label: '오늘 운영 대시보드',
+    to: '/dashboard',
+  },
+  {
+    label: '주문 운영 현황',
+    to: '/orders',
+  },
+  {
+    label: 'Mock 데이터',
+    to: '/mockdata',
+  },
+  {
+    label: '메뉴 수익성 설정',
+    to: '/menus',
+  },
+  {
+    label: '플랫폼 정산 조건',
+    to: '/platforms',
+  },
+  {
+    label: '매장 관리',
+    to: '/store',
+  },
+];
 </script>
 
 <template>
@@ -28,11 +46,13 @@ const navItems = ref([
             {{ isOpen ? '<=' : '=>' }}
         </button>
         <div v-if="isOpen" class="side-list">
-            <div
-            class="menu-item"
-            v-for="(item, index) in navItems" 
-            :key="index"
-            >{{ item }}</div>
+            <RouterLink 
+                v-for="item in navItems" 
+                :key="item.to" 
+                :to="item.to" 
+                class="menu-item"
+            >{{ item.label }}
+          </RouterLink>
         </div>
     </div>
 </template>

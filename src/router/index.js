@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/auth/useAuthStore.js'
 import App from '../App.vue'
 import PlatformsView from '../views/platform/PlatformsView.vue'
 import MockDataView from '../views/mock/MockDataView.vue'
+import OrdersView from '../views/order/OrdersView.vue'
 import LandingView from '../views/LandingView.vue'
 
 const setMeta = (isAuthenticated, isGestOnly) => {
@@ -18,7 +19,7 @@ const setMeta = (isAuthenticated, isGestOnly) => {
 const routes = [
   {
     path: '/auth',
-    component: App
+    redirect: '/login',
   },
   {
     path: '/login',
@@ -41,11 +42,13 @@ const routes = [
     meta: setMeta(false, false),
   },
   {
-  
+    path:'/orders',
+    component: OrdersView,
+    meta: setMeta(false, false),
   },
 
   {
-    path: '/',
+    path: '/platform',
     name: 'platform',
     component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
     },
