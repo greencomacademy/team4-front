@@ -8,68 +8,79 @@ import PlatformsView from '../views/PlatformsView.vue'
 import MockDataView from '../views/MockDataView.vue'
 import LandingView from '../views/LandingView.vue'
 
-const setMeta = (isAuthenticated, isGestOnly) => {
+const setMeta = (isAuthenticated, isGuestOnly) => {
   return {
     isAuthenticated,
-    isGestOnly,
+    isGuestOnly,
   }
 }
 
 const routes = [
   {
-    path: '/auth',
-    component: App
+    path: '/',
+    name: 'landing',
+    component: LandingView,
+    meta: { isGuestOnly: false }
+  },
+  {
+    path: '/platforms',
+    name: 'platform',
+    component: PlatformsView,
+    meta: { isAuthenticated: true }
   },
   {
     path: '/login',
+    name: 'login',
     component: Login,
-    meta: setMeta(false, true),
+    meta: { isGuestOnly: true }
   },
   {
     path: '/registration',
+    name: 'registration',
     component: Registration,
-    meta: setMeta(false, true),
+    meta: { isGuestOnly: true }
   },
   {
     path: '/dashboard',
+    name: 'dashboard',
     component: DashboardView,
-    meta: setMeta(true, false),
+    meta: { isAuthenticated: true }
   },
   {
     path: '/mockdata',
+    name: 'mockdata',
     component: MockDataView,
-    meta: setMeta(false, false),
-  },
-  {
-    path: '/',
-    name: 'platform',
-    component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
-    },
-    {
-    path: '/',
-    name: 'landing',
-    component: LandingView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
-    }
-]
+    meta: { isAuthenticated: true }
+  }
+
+];
+
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
 })
 
-router.beforeEach((to, from) => {
-
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
-
-  const isUserAuthenticated = authStore.isLoggedIn
-
-  if (to.meta.isAuthenticated && !isUserAuthenticated) {
-    return '/login';
-  } 
-  if (to.meta.isGestOnly && isUserAuthenticated) {
-    return '/';
+  
+  if(!authStore.isLoggedIn) {
+    try {
+      await authStore.reissue();
+    } catch (error) {
+    }
   }
-})
+
+  if(to.meta.isAuthenticated && !authStore.isLoggedIn) {
+    return next('/login');
+  }
+
+  if(to.meta.isGuestOnly && authStore.isLoggedIn) {
+    return next('/');
+  }
+
+  next();
+});
 
 
 export default router;

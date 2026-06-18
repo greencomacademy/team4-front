@@ -13,7 +13,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (loginForm) => {
     try {
-      const url = '/auth/login';
+      const url = '/api/auth/login';
       const res = await myAxios.post(url, loginForm);
       const data = res.data.data;
 
@@ -27,7 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const reissue = async () => {
     try {
-      const url = '/auth/reissue-token';
+      const url = '/api/auth/reissue-token';
       const res = await myAxios.post(url);
       const data = res.data.data;
 
@@ -40,7 +40,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async () => {
     try {
-      const url = '/auth/logout';
+      const url = '/api/auth/logout';
 
       const res = await myAxios.post(url);
     } catch (error) {
@@ -50,9 +50,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const registration = async (data) => {
+  const signup = async (data) => {
     try {
-      const url = "/auth/signup";
+      const url = "/api/auth/signup";
 
       await myAxios.post(url, data);
       return;
@@ -70,7 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     reissue,
     logout,
-    registration,
+    signup,
   }
 });
 
