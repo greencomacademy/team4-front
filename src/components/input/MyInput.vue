@@ -21,12 +21,12 @@ const model = defineModel();
 
 <template>
 <input
- :type="props.type"
- :readonly="props.readonly"
- :required="props.required"
- :placeholder="props.placeholder"
- :class="[props.size, props.color]"
- v-model="model"
+  :type="props.type"
+  :readonly="props.readonly"
+  :required="props.required"
+  :placeholder="props.placeholder"
+  :class="[props.size, props.color]"
+  v-model="model"
 >
 </template>
 
@@ -55,9 +55,5 @@ input {
   width: 90px;
   height: 40px;
   font-size: 14px;
-}
-
-.default {
-  background-color: transparent;
 }
 </style>

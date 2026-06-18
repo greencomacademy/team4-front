@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
-export const useDashStore = defineStore('dashboard', () => {
+export const useDashboardStore = defineStore('dashboard', () => {
   const dashboardData = ref(null);
 
   return {

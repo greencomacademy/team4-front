@@ -4,8 +4,6 @@ import { RouterView, useRoute } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
 import AppHeader from './components/layout/AppHeader.vue';
 
-// 🚨 파일이 아직 없으므로 아래 두 줄은 반드시 주석 처리해야 화면이 뜹니다!
-// import AppHeader from './components/layout/AppHeader.vue'; 
 // import BaseToast from './components/ui/BaseToast.vue'; 
 
 const route = useRoute();

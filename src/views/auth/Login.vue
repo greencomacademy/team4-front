@@ -73,7 +73,6 @@ if (isLoading.value) return;
     :size="'small'"
     :content="'로그인'"
     ></MyButton>
-
   </form>
 
   <div class="sub-link">

@@ -1,270 +1,127 @@
 <script setup>
-import { reactive } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
+import myAxios from '../../api/MyAxios.js'; // 백엔드 통신을 위한 axios 추가
 import MyInput from '../../components/input/MyInput.vue';
 import MyButton from '../../components/button/MyButton.vue';
+import axios from 'axios';
+
+const router = useRouter();
 
 const registerForm = reactive({
+  email: '',
+  password: '',
+  passwordChk: '',
+  ownerName: '',
+  phone: '',
   businessName: '',
   businessType: '',
   businessNumber: '',
-  ownerName: '',
-  phone: '',
-  email: '',
-  password: '',
 });
 
-const handleRegister = () => {
+// 💡 비밀번호 표시 여부를 관리하는 상태값 추가
+const showPassword = ref(false);
 
+const handleRegister = async () => {
+  // 1. 유효성 검사 (비밀번호 일치 확인)
+  if(registerForm.password !== registerForm.passwordChk) {
+    alert('비밀번호가 서로 일치하지 않습니다.');
+    return;
+  }
+
+  // 2. 백엔드 통신 (실제 API 주소로 수정해주세요)
+  try {
+    const response = await axios.post('http://localhost:8080/api/register', registerForm);
+    
+    // 성공 시 로그인 페이지로 이동
+    if(response.status === 200 || response.status === 201) {
+      alert('회원가입 완료');
+      router.push('/login');
+    }
+  } catch (error) {
+    console.error('회원가입 실패:', error);
+    alert('회원가입 처리 중 문제가 발생했습니다.');
+  }
 }
 </script>
 
 <template>
   <div class="register-container">
-    <form @submit.prevent="hadleRegister" class="register-form">
-    <MyButton
-    :btnType="'submit'"
-    :color="'gray'"
-    :size="'small'"
-    :content="'회원가입'"  
-    ></MyButton>
+    <form @submit.prevent="handleRegister" class="register-form">
+      <h1>회원가입</h1>
       
-  <div class="auth-wrapper">
-    <div class="auth-card register-card">
-      
-      <div class="auth-header">
-        <div class="logo">
-          <span class="logo-icon">📊</span>
-          <strong>DO</strong> PROFIT
-        </div>
-        <h1>회원가입</h1>
-        <p>간단한 정보 입력으로 스마트한 배달 운영을 시작하세요.</p>
+      <div class="group">
+        <MyInput type="email" v-model="registerForm.email" placeholder="이메일" required></MyInput>
+        
+        <MyInput 
+          :type="showPassword ? 'text' : 'password'" 
+          v-model="registerForm.password" 
+          placeholder="비밀번호" 
+          required
+        ></MyInput>
+        
+        <MyInput 
+          :type="showPassword ? 'text' : 'password'" 
+          v-model="registerForm.passwordChk" 
+          placeholder="비밀번호재확인" 
+          required
+        ></MyInput>
+
+        <label class="show-pwd-label">
+          <input type="checkbox" v-model="showPassword"> 비밀번호 표시
+        </label>
+
+        <MyInput type="text" v-model="registerForm.ownerName" placeholder="이름" required></MyInput>
+        <MyInput type="text" v-model="registerForm.phone" placeholder="연락처" required></MyInput>
       </div>
 
-      <form @submit.prevent="handleRegister" class="auth-form">
-        
-        <div class="form-section">
-          <h3 class="section-title">계정 정보</h3>
-          <div class="input-grid">
-            <div class="input-wrapper full-width">
-              <MyInput type="email" v-model="registerForm.email" placeholder="이메일 주소 (로그인 ID)" required />
-            </div>
-            <div class="input-wrapper">
-              <MyInput type="password" v-model="registerForm.password" placeholder="비밀번호" required />
-            </div>
-            <div class="input-wrapper">
-              <MyInput type="password" v-model="registerForm.passwordChk" placeholder="비밀번호 재확인" required />
-            </div>
-          </div>
-        </div>
-
-        <div class="btn-group">
-          <MyButton
-            :btn-type="'submit'"
-            :color="'primary'"
-            :size="'large'"
-            :content="'회원가입 완료하기'"
-            class="full-width-btn"
-          />
-        </div>
-
-        <div class="sub-link">
-          <span class="question-text">이미 계정이 있으신가요?</span>
-          <router-link to="/login" class="login-link">로그인</router-link>
-        </div>
-
-      </form>
-    </div>
-</div>
-</form>
-
-
-
+      <MyButton
+        :btn-type="'button'"
+        :color="'gray'"
+        :size="'small'"
+        :content="'회원가입'"  
+        @click="handleRegister"
+      ></MyButton>
+    </form>
   </div>
 </template>
 
 <style scoped>
-/* ========================================
-Design System Variables
-======================================== */
-.auth-wrapper {
-  --bg-main: #f8fafc;
-  --bg-card: #ffffff;
-  
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  
-  --text-main: #0f172a;
-  --text-sub: #475569;
-  --text-muted: #94a3b8;
-  
-  --border-color: #e2e8f0;
-  
-  --shadow-card: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-main);
-  padding: 40px 20px; 
-  font-family: 'Pretendard', -apple-system, sans-serif;
-  color: var(--text-main);
-}
-
-/* ========================================
-Auth Card Layout
-======================================== */
-.auth-card {
-  width: 100%;
-  background: var(--bg-card);
-  border-radius: 16px;
-  box-shadow: var(--shadow-card);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  padding: 40px 32px;
-}
-
-/* 회원가입 폼은 2단 그리드가 넉넉히 들어가도록 넓이를 키움 (520px -> 640px) */
-.register-card {
-  max-width: 640px; 
-}
-
-/* ========================================
-Header Area
-======================================== */
-.auth-header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.logo {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--text-main);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-bottom: 24px;
-  letter-spacing: -0.5px;
-}
-
-.logo strong {
-  color: var(--primary);
-}
-
-.auth-header h1 {
-  font-size: 24px;
-  font-weight: 800;
-  margin-bottom: 8px;
-  color: var(--text-main);
-  letter-spacing: -0.5px;
-}
-
-.auth-header p {
-  font-size: 14px;
-  color: var(--text-sub);
-  margin: 0;
-}
-
-/* ========================================
-Form Area & Grid System
-======================================== */
-.auth-form {
+form {
+  padding: 20px 0;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  align-items: center;
+  gap: 15px; /* 시각적 안정을 위해 gap을 살짝 넓혔습니다 */
 }
 
-.form-section {
+.group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.section-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-sub);
-  margin: 0 0 4px 4px;
-}
-
-/* 2단 그리드 레이아웃 적용 */
-.input-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px; /* 입력창끼리 간격 확보 */
-}
-
-/* 특정 인풋을 가로 전체로 차지하게 만듦 */
-.full-width {
-  grid-column: span 2;
-}
-
-.input-wrapper {
+  gap: 10px;
   width: 100%;
-  min-width: 0; /* 자식 요소 때문에 그리드 셀이 강제로 커지는 현상(Overflow) 방지 */
+  max-width: 300px; /* 입력칸들이 너무 퍼지지 않게 잡아줍니다 */
 }
 
-/* [중요] 외부 컴포넌트(MyInput)가 그리드 안에서 100% 사이즈로 딱 맞춰지도록 강제 제한 */
-.input-wrapper :deep(input),
-.input-wrapper :deep(div),
-.input-wrapper :deep(.input-container) {
-  max-width: 100%;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* 반응형 처리: 화면이 좁을 때(태블릿/모바일) 1단으로 변경하여 깨짐 방지 */
-@media (max-width: 600px) {
-  .input-grid {
-    grid-template-columns: 1fr;
-  }
-  .full-width {
-    grid-column: span 1;
-  }
-  .register-card {
-    padding: 32px 24px; /* 모바일에서는 여백을 조금 줄여줌 */
-  }
-}
-
-.btn-group {
-  margin-top: 8px;
-}
-
-.full-width-btn {
-  width: 100%;
-  display: block;
-}
-
-/* ========================================
-Sub Link Area
-======================================== */
-.sub-link {
+/* 새로 추가된 비밀번호 표시 라벨 스타일 */
+.show-pwd-label {
+  font-size: 12px;
+  color: #666;
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-color);
+  gap: 5px;
+  cursor: pointer;
+  align-self: flex-end; /* 오른쪽으로 정렬 */
+  margin-bottom: 5px;
 }
 
-.question-text {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.login-link {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--primary);
+.login {
+  font-size: 12px;
+  color: #666;
   text-decoration: none;
-  transition: color 0.2s ease;
 }
 
-.login-link:hover {
-  color: var(--primary-hover);
-  text-decoration: underline;
+.login:hover {
+  color: #333;
 }
 </style>

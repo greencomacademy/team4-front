@@ -4,20 +4,19 @@ import { useRouter } from 'vue-router'
 const goBack = () => {
   router.push('/Dashboard'); // 뒤로가기 시 누르면, 대시보드 페이지로
 }
+
 const redirectLogin = () => {
   router.push('/login');
 }
 
 const redirectRegistration = () => {
-  router.push('/registration');
+  router.push('/register');
 }
 
 const logout = async () => {
   await authStore.logout();
   router.replace('/');
 }
-// Vue Router 인스턴스 가져오기
-const router = useRouter()
 
 </script>
 
