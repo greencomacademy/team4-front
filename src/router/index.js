@@ -7,6 +7,8 @@ import App from '../App.vue'
 import PlatformsView from '../views/PlatformsView.vue'
 import MockDataView from '../views/MockDataView.vue'
 import LandingView from '../views/LandingView.vue'
+import StoreView from '../views/store/StoreView.vue'
+
 
 const setMeta = (isAuthenticated, isGestOnly) => {
   return {
@@ -49,12 +51,12 @@ const routes = [
     path: '/',
     name: 'landing',
     component: LandingView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
+    },
+    {
+      path: '/store',
+      name: 'store',
+      component: StoreView // 주소가 '/store' 일 때 스토어 페이지를 띄웁니다.
     }
-  {
-    path: '/store',
-    name: 'store',
-    component: StoreView // 주소가 '/store' 일 때 스토어 페이지를 띄웁니다.
-  }
 ]
 
 const router = createRouter({

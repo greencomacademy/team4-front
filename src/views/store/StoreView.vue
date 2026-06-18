@@ -5,8 +5,19 @@ StoreView.vue: '매장 관리' 탭입니다.
 <script setup>
 import { onBeforeMount, reactive } from 'vue';
 import { useRouter } from 'vue-router';
-import { useStoreStore } from '../store/useStoreStore';
+import { useStoreStore } from '../../store/useStoreStore';
 
+
+defineProps({
+  isOpenUpdate: {
+    type: Boolean,
+    default: false
+  }
+});
+
+
+// 여러 컴포넌트가 공유해서 사용해야 하는 상태값은, store 에 관리를 한다.
+// 한 컴포넌트 내에서만 사용할 상태값은, 해당 컴포넌트에서 관리한다.
 
 //  store 
 // | 매장 | 매장 등록/조회/수정 가능 
@@ -148,7 +159,7 @@ const storeId = store.currentData?.id;
 
 
 
-        <article class="card">
+      <article class="card" v-if="isOpenUpdate">
         <div class="card-title">
           <h3>내 매장정보 수정</h3>
           <p>매장 정보를 수정할 수 있습니다.</p>
