@@ -3,7 +3,7 @@ import { reactive, ref } from 'vue';
 import MyInput from '../../components/input/MyInput.vue';
 import MyButton from '../../components/button/MyButton.vue';
 import { useRouter } from 'vue-router';
-import useAuthStore from '../../store/auth/useAuthStore';
+import { useAuthStore } from '../../stores/auth/useAuthStore.js';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -59,8 +59,6 @@ try {
     :content="'회원가입'"  
     ></MyButton>
       
-
-
     </form>
 
 
