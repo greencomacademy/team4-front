@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/auth/Login.vue'
 import DashboardView from '../views/dashboard/DashboardView.vue'
 import Registration from '../views/auth/Registration.vue'
-import { useAuthStore } from '../store/store/useStoreStore.js'
+import { useAuthStore } from '../store/auth/useAuthStore.js'
 import App from '../App.vue'
 import PlatformsView from '../views/platform/PlatformsView.vue'
 import MockDataView from '../views/mock/MockDataView.vue'
@@ -40,6 +40,10 @@ const routes = [
     component: MockDataView,
     meta: setMeta(false, false),
   },
+  {
+  
+  },
+
   {
     path: '/',
     name: 'platform',
