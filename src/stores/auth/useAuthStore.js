@@ -72,8 +72,4 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     registration,
   }
-<<<<<<< HEAD:src/stores/auth/useAuthStore.js
 });
-=======
-});
->>>>>>> 52081c549cadf47d714d027bac6dac2f227cec04:src/store/useAuthStore.js
