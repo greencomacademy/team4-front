@@ -1,32 +1,3 @@
-<template>
-  <aside class="side-bar" :class="{ 'fold': !isOpen }">
-    <button class="toggle-btn" @click="emit('toggle')" aria-label="사이드바 토글">
-      <span class="arrow-icon" :class="{ 'rotated': !isOpen }">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-      </span>
-    </button>
-    
-    <div class="sidebar-content" :class="{ 'hidden': !isOpen }">
-      <div class="logo-area">
-        <span class="logo-text">DO <strong>PROFIT</strong></span>
-      </div>
-
-      <nav class="side-list">
-        <router-link
-          class="menu-item"
-          v-for="(item, index) in navItems" 
-          :key="index"
-          :to="item.path"
-        >
-          <span class="menu-icon">{{ item.icon }}</span>
-          <span class="menu-name">{{ item.name }}</span>
-        </router-link>
-      </nav>
-    </div>
-  </aside>
-</template>
 
 <script setup>
 import { ref } from 'vue';
