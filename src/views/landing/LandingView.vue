@@ -10,7 +10,7 @@ const goToLogin = () => {
 
 // 회원가입 페이지로 이동
 const goToRegistration = () => {
-  router.push('/registration');
+  router.push('/register');
 };
 </script>
 

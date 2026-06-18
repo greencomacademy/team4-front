@@ -1,15 +1,14 @@
-import LandingView from '../views/LandingView.vue';
-import PlatformsView from '../views/PlatformsView.vue';
-import { useAuthStore } from '../store/useAuthStore';
+import LandingView from '../views/landing/LandingView.vue';
+import PlatformsView from '../views/platform/PlatformsView.vue';
+import { useAuthStore } from '../stores/auth/useAuthStore.js';
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/auth/Login.vue'
 import DashboardView from '../views/dashboard/DashboardView.vue'
-import Registration from '../views/auth/Registration.vue'
-import { useAuthStore } from '../store/store/useStoreStore.js'
-import App from '../App.vue'
-import PlatformsView from '../views/platform/PlatformsView.vue'
+import Register from '../views/auth/Register.vue'
 import MockDataView from '../views/mock/MockDataView.vue'
-import LandingView from '../views/LandingView.vue'
+import OrdersView from '../views/order/OrdersView.vue'
+import MenusView from '../views/menu/MenusView.vue'
+import StoreView from '../views/store/StoreView.vue'
 
 const setMeta = (isAuthenticated, isGestOnly) => {
   return {
@@ -32,15 +31,9 @@ const routes = [
     meta: { isGuestOnly: true }
   },
   {
-    path: '/registration',
-    name: 'registration',
+    path: '/register',
+    name: 'register',
     component: Register,
-    meta: { isGuestOnly: true }
-  },
-  {
-    path: '/signup',
-    name: 'signup',
-    component: SignupView,
     meta: { isGuestOnly: true }
   },
   {
@@ -55,15 +48,29 @@ const routes = [
     meta: setMeta(false, false),
   },
   {
-    path: '/',
+    path: '/order',
+    name: 'order',
+    component: OrdersView,
+    meta: setMeta(true, false),
+  },
+  {
+    path: '/menu',
+    name: 'menu',
+    component: MenusView,
+    meta: setMeta(true, false),
+  },
+  {
+    path: '/store',
+    name: 'store',
+    component: StoreView,
+    meta: setMeta(true, false),
+  },
+  {
+    path: '/platforms',
     name: 'platform',
-    component: PlatformsView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
-    },
-    {
-    path: '/',
-    name: 'landing',
-    component: LandingView // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
-    }
+    component: PlatformsView,
+    meta: setMeta(true, false),
+  }
 ]
 
 const router = createRouter({

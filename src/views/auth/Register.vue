@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
-import myAxios from '../../api/MyAxios.js'; // 백엔드 통신을 위한 axios 추가
+import myAxios from '../../api/myAxios.js'; // 백엔드 통신을 위한 axios 추가
 import MyInput from '../../components/input/MyInput.vue';
 import MyButton from '../../components/button/MyButton.vue';
 import axios from 'axios';

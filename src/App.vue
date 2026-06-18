@@ -36,6 +36,9 @@ const isDashboardLayout = computed(() => route.meta.isAuthenticated === true);
     </div>
   </div>
   <!-- 소개홈페이지, 로그인, 점포등록화면 -->
+  <div v-else>
+    <RouterView />
+  </div>
 </template>
 
 <style scoped>

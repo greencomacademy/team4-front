@@ -3,7 +3,7 @@ import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import MyInput from '../../components/input/MyInput.vue';
 import MyButton from '../../components/button/MyButton.vue';
-import { useAuthStore } from '../../store/useAuthStore';
+import { useAuthStore } from '../../stores/auth/useAuthStore.js';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -76,7 +76,7 @@ if (isLoading.value) return;
   </form>
 
   <div class="sub-link">
-  <router-link to="/registration" class="register">회원가입</router-link>
+  <router-link to="/register" class="register">회원가입</router-link>
   </div>
 </div>
 
