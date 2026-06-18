@@ -6,12 +6,10 @@ const props = defineProps({
   'required': Boolean,
   'size': {
     type: String,
-    default: 'middle'
   },
 
   'color': {
     type: String,
-    default: 'default'
   }
 });
 
