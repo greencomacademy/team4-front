@@ -1,30 +1,42 @@
 <script setup>
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import MyInput from '../../components/input/MyInput.vue';
 import MyButton from '../../components/button/MyButton.vue';
 import { useRouter } from 'vue-router';
+import useAuthStore from '../../store/useAuthStore.js';
 
 const router = useRouter();
+const authStore = useAuthStore();
+
+const isLoading = ref(false);
 
 const registerForm = reactive({
   email: '',
   password: '',
   passwordChk: '',
-  ownerName: '',
-  phone: '',
-  businessName: '',
-  businessType: '',
-  businessNumber: '',
 });
 
-const handleRegister = () => {
-  if(registerForm.password !== registerForm.passwordChk) {
-    alert('비밀번호가 서로 일치하지 않습니다.');
-    return;
-  }
+const handleRegister = async () => {
+if (isLoading.value) return;
 
+if(registerForm.password !== registerForm.passwordChk) {
+  alert('비밀번호가 서로 일치하지 않습니다.');
+  return;
+}
+try {
+  isLoading.value = true;
+
+  await authStore.registration(registerForm);
   alert('회원가입 완료');
   router.push('/login');
+
+} catch (error) {
+    const message = error.response?.data?.data || error.response?.data?.message || "회원가입에 실패했습니다.";
+
+    alert(message);
+  } finally {
+      isLoading.value = false;
+  }
 }
 
 </script>
@@ -37,19 +49,12 @@ const handleRegister = () => {
       <div class="group">
         <MyInput type="email" v-model="registerForm.email" placeholder="이메일" required></MyInput>
         <MyInput type="password" v-model="registerForm.password" placeholder="비밀번호" required></MyInput>
-        <MyInput type="password" v-model="registerForm.passwordChk" placeholder="비밀번호재확인" required></MyInput>
-
-        <MyInput type="text" v-model="registerForm.ownerName" placeholder="이름" required></MyInput>
-        <MyInput type="text" v-model="registerForm.phone" placeholder="연락처" required></MyInput>
-        
-        <MyInput type="text" v-model="registerForm.businessName" placeholder="업소명" required></MyInput>
-        <MyInput type="text" v-model="registerForm.businessType" placeholder="업종" required></MyInput>
-        <MyInput type="text" v-model="registerForm.businessNumber" placeholder="사업장 등록번호" required></MyInput>
+        <MyInput type="password" v-model="registerForm.passwordChk" placeholder="비밀번호 재확인" required></MyInput>
       </div>
 
     <MyButton
     :btn-type="'submit'"
-    :color="'gray'"
+    :color="'blue'"
     :size="'small'"
     :content="'회원가입'"  
     ></MyButton>

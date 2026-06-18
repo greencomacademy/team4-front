@@ -9,5 +9,12 @@
   padding: 0;
   box-sizing: border-box;
   font-family: 'BMDOHYEON_ttf';
-  color: #87CEEB;
+}
+
+:root {
+  --personal-color-black: #000000;
+  --personal-color-white: #ffffff;
+  --personal-color-gray: #6b7280;
+  --personal-color-blue: #3d7eff;
+  --personal-color-red: #ff0000;
 }
