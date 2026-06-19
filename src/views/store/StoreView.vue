@@ -207,6 +207,16 @@ const handleCancel = () => {
           <label>주방 처리량 <span>*</span></label>
           <input name="kitchenCapacity" type="number" min="1" v-model="formData.kitchenCapacity" placeholder="예: 50" required>
         </div>
+        <br>
+        <div class="input-group">
+          <label>영업 시작 시간 <span>*</span></label>
+          <input name="openingTime" type="time" v-model="formData.openingTime" required>
+        </div>
+
+        <div class="input-group">
+          <label>영업 종료 시간 <span>*</span></label>
+          <input name="closingTime" type="time" v-model="formData.closingTime" required>
+        </div>
         
         <div class="info-banner full-width">
           현재 적용 정보 카드, 영업·주방 설정 탭과 변경 이력 탭은 사용하지 않고 기본정보 탭 하나에서 등록과 수정을 처리합니다.
