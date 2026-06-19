@@ -1,63 +1,3 @@
-<template>
-  <aside class="side-bar" :class="{ 'fold': !isOpen }">
-    <button class="toggle-btn" @click="emit('toggle')" aria-label="사이드바 토글">
-      <span class="arrow-icon" :class="{ 'rotated': !isOpen }">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-      </span>
-    </button>
-    
-    <div class="sidebar-content" :class="{ 'hidden': !isOpen }">
-      <div class="logo-area">
-        <span class="logo-text">DO <strong>PROFIT</strong></span>
-      </div>
-
-      <nav class="side-list">
-        <router-link
-          class="menu-item"
-          v-for="(item, index) in navItems" 
-          :key="index"
-          :to="item.path"
-        >
-          <span class="menu-icon">{{ item.icon }}</span>
-          <span class="menu-name">{{ item.name }}</span>
-        </router-link>
-      </nav>
-    </div>
-  </aside>
-</template>
-
-<template>
-  <aside class="side-bar" :class="{ 'fold': !isOpen }">
-    <button class="toggle-btn" @click="emit('toggle')" aria-label="사이드바 토글">
-      <span class="arrow-icon" :class="{ 'rotated': !isOpen }">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-      </span>
-    </button>
-    
-    <div class="sidebar-content" :class="{ 'hidden': !isOpen }">
-      <div class="logo-area">
-        <span class="logo-text">DO <strong>PROFIT</strong></span>
-      </div>
-
-      <nav class="side-list">
-        <router-link
-          class="menu-item"
-          v-for="(item, index) in navItems" 
-          :key="index"
-          :to="item.path"
-        >
-          <span class="menu-icon">{{ item.icon }}</span>
-          <span class="menu-name">{{ item.name }}</span>
-        </router-link>
-      </nav>
-    </div>
-  </aside>
-</template>
-
 <script setup>
 import { ref } from 'vue';
 
@@ -276,11 +216,7 @@ Design System Variables
   transform: rotate(180deg);
 }
 
-/* ========================================
-4. 메뉴 아이템 스타일
-======================================== */
-  width: 0px; 
-}
+
 
 /* ========================================
 2. 사이드바 내부 컨텐츠 영역
@@ -450,6 +386,8 @@ Design System Variables
   width: 4px;
   background-color: var(--primary);
   border-radius: 0 4px 4px 0;
+}
+
 .router-link-active .menu-icon {
   opacity: 1;
 }

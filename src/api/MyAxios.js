@@ -17,7 +17,7 @@ const myAxios = axios.create({
 myAxios.interceptors.request.use(async (config) => {
   const authStore = useAuthStore();
   let accessToken = authStore.accessToken;
-  const denyUrl = /^\/api\/reissue-token$/;
+  const denyUrl = /^\/auth\/reissue-token$/;
   
   if(!denyUrl.test(config.url) && authStore.isLoggedIn) {
     const claims = jwtDecode(accessToken);

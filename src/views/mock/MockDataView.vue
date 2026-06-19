@@ -1,11 +1,13 @@
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
 import MyButton from '../../components/button/MyButton.vue';
+import myAxios from '../../api/myAxios.js';
 
 // ----------------------
 // 화면 상태 관리
 // ----------------------
+
+const axios = myAxios(); // 공통 설정된 axios 인스턴스 사용
 
 // 발표 시연용 카드 지연 테스트 수량 저장 변수
 const delayCnt = ref(1);
