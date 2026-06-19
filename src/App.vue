@@ -4,21 +4,15 @@ import { RouterView, useRoute } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
 import AppHeader from './components/layout/AppHeader.vue';
 
-// import BaseToast from './components/ui/BaseToast.vue'; 
-
 const route = useRoute();
 const isSidebarOpen = ref(true);
 
-// 현재 주소가 '/' (랜딩 페이지)인지 감지하는 변수
-const isLandingPage = computed(() => route.path === '/');
-
-// 대시보드 레이아웃이 필요한 페이지인지 감지
-const isDashboardLayout = computed(() => route.meta.isAuthenticated === true);
+// 헤더와 사이드바를 표시할지 여부
+const showLayout = computed(() => !route.meta.hideLayout);
 </script>
 
 <template>
-  <!-- 로그인 후 보여줄 대시보드화면 -->
-  <div class="app-wrapper" v-if="isDashboardLayout">
+  <div class="app-wrapper" v-if="showLayout">
     <AppSidebar
       class="sidebar-area" 
       :is-open="isSidebarOpen"
@@ -26,32 +20,37 @@ const isDashboardLayout = computed(() => route.meta.isAuthenticated === true);
     />
     
     <div class="content-area">
-      <AppHeader v-if="!isLandingPage" class="header-area temp-header">
+      <AppHeader class="header-area temp-header" />
 
-      </AppHeader>
-
-      <main class="page-area" :class="{ 'no-padding': isLandingPage }">
+      <main class="page-area">
         <RouterView />
       </main>
     </div>
   </div>
-  <!-- 소개홈페이지, 로그인, 점포등록화면 -->
+  
   <div v-else>
     <RouterView />
   </div>
 </template>
 
 <style scoped>
+/* 1. 전체 화면 크기 고정 (레이아웃 틀어짐 방지) */
 .app-wrapper {
-  display: flex; 
+  display: flex;
+  width: 100vw;
+  height: 100vh; 
   overflow: hidden;
   background-color: #f5f7fb;
 }
 
+/* 2. 사이드바 영역 */
 .sidebar-area {
   z-index: 10;
+  height: 100%;
+  flex-shrink: 0; /* 화면이 좁아져도 사이드바 너비가 강제로 찌그러지지 않도록 보호 */
 }
 
+/* 3. 우측 메인 컨텐츠 영역 (헤더 + 본문) */
 .content-area {
   flex: 1; 
   display: flex;
@@ -59,10 +58,8 @@ const isDashboardLayout = computed(() => route.meta.isAuthenticated === true);
   overflow: hidden;
 }
 
-/* 양쪽 브랜치에서 각각 추가한 높이와 배경색 속성을 모두 누락 없이 합쳤습니다 */
+/* 4. 헤더 영역 (중복 속성 제거 및 70px로 통일) */
 .temp-header {
-  height: 50px;
-  background-color: #ffffff;
   height: 70px;
   background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb;
@@ -71,21 +68,12 @@ const isDashboardLayout = computed(() => route.meta.isAuthenticated === true);
   gap: 15px;
   font-weight: bold;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
-.main-content {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.sidebar-area {
-  z-index: 10;
-  height: 100%;
-}
-
+/* 5. 본문 영역 */
 .page-area {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: auto; /* 본문 내용이 길어지면 여기에만 스크롤 생성 */
 }
 </style>

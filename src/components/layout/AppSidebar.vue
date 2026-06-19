@@ -1,3 +1,26 @@
+<script setup>
+import { ref } from 'vue';
+
+defineProps({
+  isOpen: {
+    type: Boolean,
+    default: true
+  }
+});
+
+const emit = defineEmits(['toggle']);
+
+// 1. 매장 관리를 제거하고, 새로운 메뉴명(통합 주문 관리 등)을 적용했습니다.
+const navItems = ref([
+  { name: '통합 대시보드', path: '/dashboard' },
+  { name: '통합 주문 관리', path: '/order' },
+  { name: '메뉴 수익 관리', path: '/menu' },
+  { name: '수수료 기준 설정', path: '/platform' },
+  { name: 'Mock 데이터', path: '/mockdata' }
+  // 매장 관리는 헤더로 이동했으므로 삭제
+]);
+</script>
+
 <template>
   <aside class="side-bar" :class="{ 'fold': !isOpen }">
     <button class="toggle-btn" @click="emit('toggle')" aria-label="사이드바 토글">
@@ -20,35 +43,12 @@
           :key="index"
           :to="item.path"
         >
-          <span class="menu-icon">{{ item.icon }}</span>
           <span class="menu-name">{{ item.name }}</span>
         </router-link>
       </nav>
     </div>
   </aside>
 </template>
-
-<script setup>
-import { ref } from 'vue';
-
-defineProps({
-  isOpen: {
-    type: Boolean,
-    default: true
-  }
-});
-
-const emit = defineEmits(['toggle']);
-
-const navItems = ref([
-  { name: '오늘 운영 대시보드', path: '/dashboard', icon: '📊' },
-  { name: '주문 운영 현황', path: '/order', icon: '📝' },
-  { name: 'Mock 데이터', path: '/mockdata', icon: '🧪' },
-  { name: '메뉴 수익성 설정', path: '/menu', icon: '🍳' },
-  { name: '플랫폼 정산 조건', path: '/platform', icon: '⚙️' },
-  { name: '매장 관리', path: '/store', icon: '🏪' }
-]);
-</script>
 
 <style scoped>
 /* ========================================
@@ -58,10 +58,10 @@ Design System Variables
   --bg-sidebar: #ffffff;
   --border-color: #e2e8f0;
   
-  --primary: #2563eb;
-  --primary-light: #eff6ff;
+  --primary: #2784B8; /* 최신 가이드라인에 맞춰 수정 (Primary Strong) */
+  --primary-light: #EAF8FD; /* 최신 가이드라인에 맞춰 수정 (Primary Soft) */
   
-  --text-main: #0f172a;
+  --text-main: #164E68; /* 최신 가이드라인에 맞춰 수정 (Primary Text) */
   --text-sub: #475569;
   --text-muted: #94a3b8;
   
@@ -116,7 +116,7 @@ Design System Variables
   margin-bottom: 8px;
 }
 .logo-text {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--text-main);
   letter-spacing: -0.5px;
@@ -137,18 +137,15 @@ Design System Variables
 ======================================== */
 .toggle-btn {
   position: absolute;
-  right: -24px; /* 버튼의 넓이만큼 바깥으로 빼기 */
+  right: -24px; 
   top: 50%;
   transform: translateY(-50%);
   width: 24px;
-  height: 80px; /* 사다리꼴 모양에 맞춰 세로 길이를 늘림 */
+  height: 80px; 
   background-color: var(--bg-sidebar);
   
-  /* 사다리꼴(Tab) 모양 자르기 */
   clip-path: polygon(0 0, 100% 15%, 100% 85%, 0 100%);
-  border-radius: 0 8px 8px 0; /* clip-path 미지원 브라우저 대비 */
-  
-  /* clip-path 적용 시 일반 box-shadow가 잘리므로 drop-shadow 필터 사용 */
+  border-radius: 0 8px 8px 0; 
   filter: drop-shadow(3px 0 4px rgba(0, 0, 0, 0.08));
   
   border: none;
@@ -159,7 +156,7 @@ Design System Variables
   justify-content: center;
   transition: all 0.2s ease;
   z-index: 100;
-  padding-right: 2px; /* 사다리꼴 빗면에 맞춰 아이콘을 시각적 중앙으로 미세조정 */
+  padding-right: 2px; 
 }
 
 .toggle-btn:hover {
@@ -172,7 +169,6 @@ Design System Variables
   transition: transform var(--transition-speed) ease;
 }
 
-/* 접혔을 때 화살표 방향 반전 */
 .arrow-icon.rotated {
   transform: rotate(180deg);
 }
@@ -188,17 +184,11 @@ Design System Variables
   padding: 12px 14px;
   color: var(--text-sub); 
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 19px; /* 메뉴 글씨가 19px면 너무 큽니다. 일반적인 15~16px로 조정했습니다 */
+  font-weight: 600;
   border-radius: 8px;
   transition: all 0.2s ease;
   position: relative;
-}
-
-.menu-icon {
-  font-size: 16px;
-  opacity: 0.8;
-  transition: opacity 0.2s;
 }
 
 .menu-item:hover {
@@ -206,18 +196,10 @@ Design System Variables
   color: var(--text-main);
 }
 
-.menu-item:hover .menu-icon {
-  opacity: 1;
-}
-
 .router-link-active {
   background-color: var(--primary-light);
   color: var(--primary);
-  font-weight: 700;
-}
-
-.router-link-active .menu-icon {
-  opacity: 1;
+  font-weight: 800;
 }
 
 .router-link-active::before {
