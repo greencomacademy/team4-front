@@ -1,8 +1,8 @@
 <script setup>
 import { reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import MyInput from '../../components/input/MyInput.vue';
 import MyButton from '../../components/button/MyButton.vue';
-import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth/useAuthStore.js';
 
 const router = useRouter();
@@ -17,51 +17,56 @@ const registerForm = reactive({
 });
 
 const handleRegister = async () => {
-if (isLoading.value) return;
+  if (isLoading.value) return;
 
-if(registerForm.password !== registerForm.passwordChk) {
-  alert('비밀번호가 서로 일치하지 않습니다.');
-  return;
-}
-try {
-  isLoading.value = true;
+  if (registerForm.password !== registerForm.passwordChk) {
+    alert('비밀번호가 서로 일치하지 않습니다.');
+    return;
+  }
 
-  await authStore.registration(registerForm);
-  alert('회원가입 완료');
-  router.push('/login');
-
-} catch (error) {
+  try {
+    isLoading.value = true;
+    
+    // API 요청
+    await authStore.registration({
+      email: registerForm.email,
+      password: registerForm.password,
+    });
+    
+    alert('회원가입 완료');
+    router.push('/login');
+  } catch (error) {
     const message = error.response?.data?.data || error.response?.data?.message || "회원가입에 실패했습니다.";
-
     alert(message);
   } finally {
-      isLoading.value = false;
+    isLoading.value = false;
   }
 }
-
 </script>
 
 <template>
   <div class="register-container">
     <form @submit.prevent="handleRegister" class="register-form">
-
       <h1>회원가입</h1>
+      
       <div class="group">
-        <MyInput type="email" v-model="registerForm.email" placeholder="이메일" required></MyInput>
-        <MyInput type="password" v-model="registerForm.password" placeholder="비밀번호" required></MyInput>
-        <MyInput type="password" v-model="registerForm.passwordChk" placeholder="비밀번호 재확인" required></MyInput>
+        <MyInput type="email" v-model="registerForm.email" placeholder="이메일" required />
+        <MyInput type="password" v-model="registerForm.password" placeholder="비밀번호" required />
+        <MyInput type="password" v-model="registerForm.passwordChk" placeholder="비밀번호 재확인" required />
       </div>
 
-    <MyButton
-    :btn-type="'submit'"
-    :color="'blue'"
-    :size="'small'"
-    :content="'회원가입'"  
-    ></MyButton>
+      <MyButton
+        :btn-type="'submit'"
+        :color="'blue'"
+        :size="'small'"
+        :content="isLoading ? '처리 중...' : '회원가입'"
+        :disabled="isLoading"
+      />
       
+      <router-link to="/login" class="login">
+        이미 계정이 있으신가요? 로그인
+      </router-link>
     </form>
-
-
   </div>
 </template>
 
@@ -71,10 +76,18 @@ form {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 15px; /* 조금 더 여유 있는 간격 */
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+  width: 100%;
 }
 
 .login {
+  margin-top: 10px;
   font-size: 12px;
   color: #666;
   text-decoration: none;

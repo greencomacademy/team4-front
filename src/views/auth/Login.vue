@@ -49,7 +49,7 @@ if (isLoading.value) return;
 
 <template>
 <div class="login-wrap">
-  <form @submit.prevent="hadleSubmit">
+  <form @submit.prevent="handleSubmit">
     <h1>로그인</h1>
     <div class="group">
     <MyInput
