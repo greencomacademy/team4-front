@@ -1,8 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { RouterView, useRoute } from 'vue-router';
+import { ref } from 'vue';
+import { RouterView } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
-import AppHeader from './components/layout/AppHeader.vue';
 
 const route = useRoute();
 const isSidebarOpen = ref(true);
@@ -65,6 +64,7 @@ const showLayout = computed(() => !route.meta.hideLayout);
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
+  padding: 0 20px;
   gap: 15px;
   font-weight: bold;
   flex-shrink: 0;
