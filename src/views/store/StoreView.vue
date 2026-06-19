@@ -1,480 +1,467 @@
-<!--
-StoreView.vue: '매장 관리' 탭입니다. 
-내 가게의 기본 정보(이름, 주소, 주방 처리량 등)를 등록하고 확인하는 화면입니다.
--->
 <script setup>
-import { onBeforeMount, reactive } from 'vue';
+import { onBeforeMount, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useStoreStore } from '../../store/useStoreStore';
+import { useStoreStore } from '../../store/store/useStoreStore';
 
-
-
-// 여러 컴포넌트가 공유해서 사용해야 하는 상태값은, store 에 관리를 한다.
-// 한 컴포넌트 내에서만 사용할 상태값은, 해당 컴포넌트에서 관리한다.
-
-//  store 
-// | 매장 | 매장 등록/조회/수정 가능 
 const router = useRouter();
-
-// 배달+ 프로핏 을 줄여서 베프
-
 const store = useStoreStore();
 
-// 1. 등록 폼 전용: 사업자번호 3칸 변수
-const businessNumber = reactive({
-  part1: '',
-  part2: '',
-  part3: ''
-});
-
-const myStoreRegistration = reactive({
+// 1. 화면에 바인딩 될 입력 폼 상태 (상세주소, 업종, 상태 추가)
+const formData = reactive({
   name: '',
-  address: '',
   phone: '',
+  address: '',
+  detailAddress: '', // 추가: 상세주소
+  category: '한식',    // 추가: 업종 (기본값)
+  status: '운영중',    // 추가: 매장 상태 (기본값)
   kitchenCapacity: '',
 });
 
-
-// 1. 컴포넌트 지역 상태
-const isUpdateModalOpen = ref(false); // 모달창 열림/닫힘 상태
-
-
-// 2. 수정 폼 전용: 사업자번호 3칸 변수
-const updatebusinessNumber = reactive({
+// 사업자 번호 3칸 전용 상태
+const bizNumParts = reactive({
   part1: '',
   part2: '',
   part3: ''
 });
 
-// 수정 폼 전용 임시 데이터
-const updateFormData = reactive({     
-  name: '',
-  businessNumber: '',
-  address: '',
-  phone: '', 
-  kitchenCapacity: '',
-});
+// 2. 변경된 항목만 추출하기 위해 원본 데이터를 저장해둘 빈 객체
+let originalData = {};
 
-// 2. 모달창 열기 (기존 데이터 채워넣기)
-const openUpdateModal = () => {
-  if (store.currentData) {
-    updateFormData.name = store.currentData.name;
-    updateFormData.address = store.currentData.address;
-    updateFormData.phone = store.currentData.phone;
-    updateFormData.kitchenCapacity = store.currentData.kitchenCapacity;
+// 3. 내 매장 정보가 이미 존재하는지 판별 (버튼 '등록/수정' 동적 변경)
+const isExistingStore = computed(() => !!store.currentData);
 
-    // 서버에서 가져온 사업자번호("123-45-67890")를 쪼개서 각각의 칸에 넣습니다.
-    if (store.currentData.businessNumber) {
-      const parts = store.currentData.businessNumber.split('-');
-      updatebusinessNumber.part1 = parts[0] || '';
-      updatebusinessNumber.part2 = parts[1] || '';
-      updatebusinessNumber.part3 = parts[2] || '';
-    }
-
-  }
-  isUpdateModalOpen.value = true;
-};
-
-// 3. 모달창 닫기
-const closeUpdateModal = () => {
-  isUpdateModalOpen.value = false;
-};
-
-// 4. 수정 완료 전송
-const submitUpdate = async () => {
-  try {
-
-    // 3칸의 데이터를 하이픈(-)으로 합쳐서 서버 전송용 객체에 넣습니다.
-    updateFormData.businessNumber = `${updatebusinessNumber.part1}-${updatebusinessNumber.part2}-${updatebusinessNumber.part3}`;
-
-    await store.updateStore(updateFormData);
-    alert('매장 정보가 수정되었습니다.');
-    closeUpdateModal(); // 성공 시 모달창 닫기
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-
-
-
+// 4. 화면이 열리기 전(초기화) 로직: 백엔드 미구현 상태 고려
 onBeforeMount(async () => {
   try {
-    await store.currentStore(); // 매장 정보 불러오기
-  }catch (error) {
-    throw alert('매장 정보를 불러오는 데 실패했습니다.'+error);
+    await store.currentStore(); // 매장 정보 불러오기 시도
+    
+    // 서버에 내 매장 정보가 있다면 폼에 미리 채워줍니다.
+    if (store.currentData) {
+      formData.name = store.currentData.name || '';
+      formData.phone = store.currentData.phone || '';
+      formData.address = store.currentData.address || '';
+      formData.detailAddress = store.currentData.detailAddress || '';
+      formData.category = store.currentData.category || '한식';
+      formData.status = store.currentData.status || '운영중';
+      formData.kitchenCapacity = store.currentData.kitchenCapacity || '';
+
+      if (store.currentData.businessNumber) {
+        const parts = store.currentData.businessNumber.split('-');
+        bizNumParts.part1 = parts[0] || '';
+        bizNumParts.part2 = parts[1] || '';
+        bizNumParts.part3 = parts[2] || '';
+      }
+
+      // 스냅샷
+      originalData = {
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        detailAddress: formData.detailAddress,
+        category: formData.category,
+        status: formData.status,
+        businessNumber: store.currentData.businessNumber || '',
+        kitchenCapacity: String(formData.kitchenCapacity)
+      };
+    }
+  } catch (error) {
+    // 💡 [중요] 백엔드가 미구현이거나 에러가 나더라도 경고창으로 멈추지 않고,
+    // 자연스럽게 콘솔에만 알린 뒤 '매장 없는 상태(isExistingStore = false)'로 화면을 띄웁니다.
+    console.warn('백엔드 API 연결 실패. 테스트를 위해 매장 미등록 상태로 화면을 초기화합니다.');
   }
+});
 
-})
+// 5. 등록 및 수정 버튼 클릭 시 실행될 함수
+const handleSubmit = async () => {
+  const currentBizNum = `${bizNumParts.part1}-${bizNumParts.part2}-${bizNumParts.part3}`;
 
+  if (isExistingStore.value) {
+    /* [기존 유저] 부분 수정 로직 (PATCH) */
+    const changedFields = {};
 
-const storeId = store.currentData?.id;
+    if (formData.name !== originalData.name) changedFields.name = formData.name;
+    if (formData.phone !== originalData.phone) changedFields.phone = formData.phone;
+    if (formData.address !== originalData.address) changedFields.address = formData.address;
+    if (formData.detailAddress !== originalData.detailAddress) changedFields.detailAddress = formData.detailAddress;
+    if (formData.category !== originalData.category) changedFields.category = formData.category;
+    if (formData.status !== originalData.status) changedFields.status = formData.status;
+    if (String(formData.kitchenCapacity) !== originalData.kitchenCapacity) changedFields.kitchenCapacity = formData.kitchenCapacity;
+    if (currentBizNum !== originalData.businessNumber) changedFields.businessNumber = currentBizNum;
 
+    if (Object.keys(changedFields).length === 0) {
+      alert('수정된 항목이 없습니다.');
+      return;
+    }
 
+    try {
+      await store.updateStore(changedFields);
+      alert('매장 정보가 성공적으로 수정되었습니다.');
+      Object.assign(originalData, { ...changedFields, kitchenCapacity: String(formData.kitchenCapacity) });
+      if (changedFields.businessNumber) originalData.businessNumber = currentBizNum;
+    } catch (error) {
+      console.error('수정 실패:', error);
+    }
 
+  } else {
+    /* [신규 유저] 신규 등록 로직 (POST) */
+    const payload = { ...formData, businessNumber: currentBizNum };
+    
+    try {
+      await store.storeForm(payload);
+      alert('매장이 성공적으로 등록되었습니다.');
+      await store.currentStore(); 
+    } catch (error) {
+      console.error('등록 실패:', error);
+    }
+  }
+};
+
+// 6. 변경 취소 버튼 로직
+const handleCancel = () => {
+  if (confirm('작성 중인 내용을 취소하시겠습니까?')) {
+    window.location.reload(); 
+  }
+};
 </script>
 
 <template>
   <section data-tab-panel="store" class="page-section">
     <div class="section-title-row">
-      <div>
-        <h1 class="main-title">배달 운영 정산 대시보드</h1>
-        <h2 class="sub-title">매장 관리</h2>
-      </div>
+      <h1 class="main-title">매장 관리</h1>
+      <p class="sub-desc">우측 상단 햄버거 메뉴의 내 정보에서 진입해 매장 기본정보를 등록하거나 수정합니다.</p>
     </div>
 
-    <div class="two-column">
-      <article class="card">
-        <div class="card-title">
-          <h3>내 매장 등록</h3>
-          <p>회원 1명당 매장 1개만 저장됩니다. 다른 매장으로 바꾸려면 현재 매장을 삭제한 후, 다시 등록하세요</p>
+    <div class="tabs-mock">
+      <span class="tab active">기본정보</span>
+    </div>
+
+    <article class="card">
+      <div class="card-header">
+        <div class="title-area">
+          <h3>매장 기본정보</h3>
+          <p class="required-note"><span>*</span> 필수 입력</p>
+        </div>
+        <div class="badge" :class="isExistingStore ? 'success' : 'default'">
+          {{ isExistingStore ? '등록 완료' : '미등록' }}
+        </div>
+      </div>
+      
+      <form id="storeForm" class="grid-form" @submit.prevent="handleSubmit">
+        
+        <div class="input-group">
+          <label>매장명 <span>*</span></label>
+          <input name="name" type="text" v-model="formData.name" placeholder="DeliveryInsider Kitchen" required>
+        </div>
+        <div class="input-group">
+          <label>대표 전화번호 <span>*</span></label>
+          <input name="phone" type="text" oninput="this.value=this.value.replace(/[^0-9]/g,'')" v-model="formData.phone" placeholder="02-1234-5678" required maxlength="11">
         </div>
         
-        <form id="storeForm" class="grid-form">
-          <div class="input-group">
-            <label>매장명</label>
-            <input 
-            name="name"
-            type="text"
-            v-model="myStoreRegistration.name"
-            required>
+        <div class="input-group full-width">
+          <label>주소 <span>*</span></label>
+          <div class="input-with-btn">
+            <input name="address" type="text" v-model="formData.address" placeholder="주소를 검색해주세요" required  style="background-color: #f9fafb;">
+            <button type="button" class="btn-secondary">주소 검색</button>
           </div>
-          <div class="input-group">
-            <label>사업자 번호</label>
+        </div>
+
+        <div class="input-group">
+          <label>상세주소</label>
+          <input name="detailAddress" type="text" v-model="formData.detailAddress" placeholder="1층 101호">
+        </div>
+        <div class="input-group">
+          <label>업종</label>
+          <select name="category" v-model="formData.category">
+            <option value="한식">한식</option>
+            <option value="중식">중식</option>
+            <option value="일식">일식</option>
+            <option value="양식">양식</option>
+            <option value="카페/디저트">카페/디저트</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label>사업자번호 <span>*</span></label>
+          <div class="input-with-btn">
             <div class="biz-num-group">
-              <input type="text" maxlength="3" v-model="businessNumber.part1" required>
+              <input type="text" maxlength="3" v-model="bizNumParts.part1" required>
               <span class="dash">-</span>
-              <input type="text" maxlength="2" v-model="businessNumber.part2" required>
+              <input type="text" maxlength="2" v-model="bizNumParts.part2" required>
               <span class="dash">-</span>
-              <input type="text" maxlength="5" v-model="businessNumber.part3" required>
+              <input type="text" maxlength="5" v-model="bizNumParts.part3" required>
             </div>
-             
+            <button type="button" class="btn-secondary">형식 확인</button>
           </div>
-          <div class="input-group">
-            <label>주소</label>
-            <input 
-            name="address"
-            type="text"
-            v-model="myStoreRegistration.address"
-            required>
-          </div>
-          <div class="input-group">
-            <label>전화번호</label>
-            <input 
-            name="phone"
-            type="text"
-            v-model="myStoreRegistration.phone"
-            required>
-          </div>
-          <div class="input-group">
-            <label>주방 처리량</label>
-            <input 
-            name="kitchenCapacity"
-            type="number"
-            min="1"
-            v-model="myStoreRegistration.kitchenCapacity"
-            required>
-          </div>
-          
-          <button type="button" class="pill-btn mt-20" data-loading-key="storeSave">매장 등록</button>
-        </form>
-      </article>
+        </div>
+        <div class="input-group">
+          <label>매장 상태</label>
+          <select name="status" v-model="formData.status">
+            <option value="운영중">운영중</option>
+            <option value="휴업">휴업</option>
+            <option value="폐업">폐업</option>
+          </select>
+        </div>
 
-      <article class="card">
-        <div class="card-title">
-          <h3>현재 매장 정보</h3>
-          <p>GET /api/stores/me 응답 기준입니다</p>
+        <div class="input-group">
+          <label>주방 처리량 <span>*</span></label>
+          <input name="kitchenCapacity" type="number" min="1" v-model="formData.kitchenCapacity" placeholder="예: 50" required>
         </div>
         
-        <div id="storePreview" class="preview-container">
-          <div class="preview-group">
-            <label>매장명</label>
-            <p class="currentInfo">{{ store.currentData?.name }}</p>
-            <div class="underline"></div>
-          </div>
-          <div class="preview-group">
-            <label>사업자 번호</label>
-            <p class="currentInfo">{{ store.currentData?.businessNumber }}</p>
-            <div class="underline"></div>
-          </div>
-          <div class="preview-group">
-            <label>주소</label>
-            <p class="currentInfo">{{ store.currentData?.address }}</p>
-            <div class="underline"></div>
-          </div>
-          <div class="preview-group">
-            <label>전화번호</label>
-            <p class="currentInfo">{{ store.currentData?.phone }}</p>
-            <div class="underline"></div>
-          </div>
-          <div class="preview-group">
-            <label>주방 처리량</label>
-            <p class="currentInfo">{{ store.currentData?.kitchenCapacity }}</p>
-            <div class="underline"></div>
-          </div>
-
-          <button
-           type="button"
-           class="pill-btn mt-20"
-           @click="openUpdateModal"
-          >매장정보 수정</button>
-
-          <button
-           type="button"
-           class="pill-btn mt-20"
-           @click="store.deleteStore(storeId)"
-            >매장 삭제 후 다시 만들기</button>
-          <p class="footer-note">매장 정보는 1개만 저장됩니다. 다른 매장으로 바꾸려면 삭제 후, 새로 등록하세요</p>
+        <div class="info-banner full-width">
+          현재 적용 정보 카드, 영업·주방 설정 탭과 변경 이력 탭은 사용하지 않고 기본정보 탭 하나에서 등록과 수정을 처리합니다.
         </div>
-      </article>
 
-
-      <div class="modal-overlay" v-if="isUpdateModalOpen" @click.self="closeUpdateModal">
-        <article class="card modal-content">
-          <div class="card-title">
-            <h3>내 매장정보 수정</h3>
-            <p>매장 정보를 수정할 수 있습니다.</p>
-          </div>
-          
-          <form id="updateStoreForm" class="grid-form">
-            <div class="input-group">
-              <label>매장명</label>
-              <input name="name" type="text" v-model="updateFormData.name" required>
-            </div>
-            <div class="input-group">
-              <label>사업자 번호</label>
-              <div class="biz-num-group">
-                <input type="text" maxlength="3" v-model="updatebusinessNumber.part1" required>
-                <span class="dash">-</span>
-                <input type="text" maxlength="2" v-model="updatebusinessNumber.part2" required>
-                <span class="dash">-</span>
-                <input type="text" maxlength="5" v-model="updatebusinessNumber.part3" required>
-              </div>
-            </div>
-            <div class="input-group">
-              <label>주소</label>
-              <input name="address" type="text" v-model="updateFormData.address" required>
-            </div>
-            <div class="input-group">
-              <label>전화번호</label>
-              <input name="phone" type="text" v-model="updateFormData.phone" required>
-            </div>
-            <div class="input-group">
-              <label>주방 처리량</label>
-              <input name="kitchenCapacity" type="number" min="1" v-model="updateFormData.kitchenCapacity" required>
-            </div>
-            
-            <div class="button-group">
-              <button type="button" class="pill-btn mt-20 cancel-btn" @click="closeUpdateModal">취소</button>
-              <button type="button" class="pill-btn mt-20" @click="submitUpdate">수정 완료</button>
-            </div>
-          </form>
-        </article>
-      </div>
-
-    </div>
+        <div class="form-actions full-width">
+          <button type="button" class="btn-cancel" @click="handleCancel">변경 취소</button>
+          <button type="submit" class="btn-submit">
+            {{ isExistingStore ? '수정' : '등록' }}
+          </button>
+        </div>
+      </form>
+    </article>
   </section>
 </template>
 
 <style scoped>
-/* 전체 레이아웃 간격 */
+/* =======================================
+   전체 레이아웃
+======================================= */
 .page-section {
-  display: grid;
-  gap: 24px;
-  color: #111; /* 전체 글씨 색상을 진한 검정으로 설정 */
-
-
-  /* 추가된 핵심 스타일 */
-  max-width: 1200px; /* 창을 최대화해도 폼이 1000px 이상 커지지 않도록 제한합니다 */
-  margin: 0 auto; /* 제한된 1000px 박스를 화면 정중앙에 배치합니다 */
-  padding: 30px; /* 사이드바와 폼 사이의 간격을 30px로 넓혀줍니다 */
-  box-sizing: border-box; /* 패딩이 전체 너비에 포함되도록 하여 레이아웃 깨짐 방지 */
+  max-width: 100%; /* 100% 확장 */
+  margin: 0 auto;
+  padding: 40px 20px;
+  color: #374151;
+  font-family: 'Pretendard', sans-serif;
 }
 
-/* 상단 타이틀 디자인 */
 .main-title {
   font-size: 24px;
-  font-weight: 900;
-  margin-bottom: 20px;
-}
-.sub-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-
-/* 두 개 컬럼(카드) 분할 */
-.two-column {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 70px;
-}
-
-/* 카드 공통 디자인: 사진과 같은 연한 회색 배경과 둥근 모서리 */
-.card {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(229, 231, 235, 0.9);
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
-  padding: 30px;
-}
-
-.card-title h3 {
-  font-size: 16px;
   font-weight: 800;
+  color: #111827;
   margin-bottom: 8px;
 }
-
-.card-title p {
-  font-size: 12px;
-  margin-bottom: 24px;
-  color: #555;
-  line-height: 1.5;
-}
-
-/* 폼 요소 세로 정렬 및 간격 */
-.grid-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.input-group, .preview-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px; /* 라벨과 입력칸 사이의 간격 */
-}
-
-.input-group label, .preview-group label {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-/* 인풋창 디자인: 알약 모양으로 길고 둥글게 */
-.input-group input {
-  padding: 10px 14px;
-  border-radius: 20px; /* 입력칸 끝을 완전히 둥글게 */
-  border: 1px solid #111; /* 검은색 테두리 */
-  background: transparent; /* 배경을 투명하게 해서 카드의 회색이 비치게 함 */
-  outline: none;
+.sub-desc {
   font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 30px;
 }
 
-/* 오른쪽 카드 밑줄 디자인 */
-.preview-container {
+/* 탭 UI 스타일 */
+.tabs-mock {
+  display: flex;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 24px;
+}
+.tab {
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 15px;
+  color: #9ca3af;
+  cursor: pointer;
+}
+.tab.active {
+  color: #3b82f6;
+  border-bottom: 3px solid #3b82f6;
+  margin-bottom: -2px;
+}
+
+/* =======================================
+   카드 (Card)
+======================================= */
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 32px 40px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+.title-area h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 4px;
+}
+.required-note {
+  font-size: 12px;
+  color: #9ca3af;
+}
+.required-note span {
+  color: #ef4444; 
+}
+
+/* 상태 뱃지 */
+.badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.badge.success {
+  background-color: #d1fae5;
+  color: #059669; /* 초록색 텍스트 */
+}
+.badge.default {
+  background-color: #f3f4f6;
+  color: #6b7280; /* 회색 텍스트 */
+}
+
+/* =======================================
+   2단 그리드 폼
+======================================= */
+.grid-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.full-width {
+  grid-column: span 2; 
+}
+.input-group {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
-
-.underline {
-  border-bottom: 1px solid #111;
-  height: 20px; /* 라벨 밑으로 일정 공간 확보 후 밑줄 */
-}
-
-/* 둥근 테두리 버튼 디자인 (알약 버튼) */
-.pill-btn {
-  width: 100%;
-  padding: 12px;
-  border-radius: 24px;
-  border: 1px solid #111;
-  background: transparent;
-  color: #111;
+.input-group label {
   font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+  font-weight: 700;
+  color: #374151;
+}
+.input-group label span {
+  color: #ef4444;
 }
 
-.pill-btn:hover {
-  background: rgba(0, 0, 0, 0.05); /* 마우스 올렸을 때 살짝 어두워지는 효과 */
-}
-
-.mt-20 {
-  margin-top: 20px;
-}
-
-/* 오른쪽 카드 하단 작은 설명 글씨 */
-.footer-note {
-  margin-top: 16px;
-  font-size: 11px;
-  color: #555;
-  text-align: center;
-}
-
-
-
-/* 모달 오버레이 (화면 전체를 덮는 반투명 검은 배경) */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-/* 모달 창 내부 카드 사이즈 조절 */
-.modal-content {
-  width: 100%;
-  max-width: 450px;
-  max-height: 90vh;
-  overflow-y: auto; /* 내용이 길면 창 안에서 스크롤 생성 */
-}
-
-/* 버튼 나란히 배치 */
-.button-group {
-  display: flex;
-  gap: 12px;
-}
-
-/* 취소 버튼 스타일 추가 */
-.cancel-btn {
-  background: #f9fafb;
-  color: #6b7280;
+/* =======================================
+   입력 필드 & 셀렉트 박스 (Input & Select)
+======================================= */
+.grid-form input,
+.grid-form select {
+  padding: 10px 14px;
+  border-radius: 6px;
   border: 1px solid #d1d5db;
+  background-color: #fff;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
 }
 
+.grid-form input:focus,
+.grid-form select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
 
+/* Select 박스 화살표 커스텀 (사진과 동일하게) */
+.grid-form select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+  cursor: pointer;
+}
 
-/* 1. 가로로 나란히 배치하고 간격 설정 */
+/* 버튼 포함 인풋 그룹 */
+.input-with-btn {
+  display: flex;
+  gap: 8px;
+}
+.input-with-btn > input, .biz-num-group {
+  flex: 1; 
+}
+
+/* 사업자번호 */
 .biz-num-group {
   display: flex;
   align-items: center;
   gap: 8px; 
 }
-
-/* 2. 네모 반듯한 직사각형 폼 형태 만들기 */
 .biz-num-group input {
-  border: 1px solid #d1d5db; /* 사진과 비슷한 연한 회색 테두리 */
-  border-radius: 20px;        /* 모서리가 날카롭지 않게 아주 살짝만 둥글게 처리 */
-  padding: 10px 8px;         /* 텍스트 입력 여백 */
-  background: #ffffff;       /* 입력칸 배경을 흰색으로 */
-  outline: none; /* 포커스 시 테두리 색상 */
-  font-size: 14px;
+  text-align: center;
 }
-
-/* (선택사항) 사용자가 칸을 클릭했을 때 테두리가 진해지도록 하는 효과 */
-.biz-num-group input:focus {
-  border-color: #111;
-}
-
-/* 3. 각 칸의 가로 길이 비율 (3자리:2자리:5자리)에 맞게 조정 */
-.biz-num-group input:nth-child(1) { width: 70px; text-align: center; flex: none; }
-/* 첫 번째 칸: 3자리 */
-.biz-num-group input:nth-child(3) { width: 70px; text-align: center; flex: none; }
-/* 두 번째 칸: 2자리 */
-.biz-num-group input:nth-child(5) { width: 70px; text-align: center; flex: none; }
-
-/* 4. 가운데 하이픈 디자인 */
+.biz-num-group input:nth-child(1) { flex: 3; }
+.biz-num-group input:nth-child(3) { flex: 2; }
+.biz-num-group input:nth-child(5) { flex: 4; }
 .biz-num-group .dash {
+  color: #6b7280;
   font-weight: 500;
-  color: #666;
 }
 
+/* =======================================
+   정보 배너 & 하단 액션 버튼
+======================================= */
+.info-banner {
+  background-color: #f0fdfa; /* 연한 민트/파랑 배경 */
+  border: 1px solid #ccfbf1;
+  color: #0f766e;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 10px;
+}
 
+.btn-secondary {
+  padding: 0 16px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-secondary:hover {
+  background: #f9fafb;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end; /* 우측 하단 정렬 */
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb; 
+}
+
+.btn-cancel {
+  padding: 10px 24px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+}
+.btn-cancel:hover {
+  background: #f3f4f6;
+}
+
+.btn-submit {
+  padding: 10px 32px;
+  border: none;
+  background: #3b82f6; 
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-submit:hover {
+  background: #2563eb;
+}
 </style>
