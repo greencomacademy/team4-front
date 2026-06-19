@@ -17,7 +17,7 @@ const tableData = ref([
         <div class="api-status">
           <span class="status-dot"></span> API 정상
         </div>
-        <h1>오늘 운영 대시보드</h1>
+        <h1>실시간 운영 대시보드</h1>
         <p>핵심 운영 지표와 배달 수익성을 확인하세요.</p>
       </div>
     </header>
