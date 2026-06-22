@@ -1,49 +1,44 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
 import AppSidebar from './components/layout/AppSidebar.vue';
-import AppHeader from './components/layout/AppHeader.vue';
+import AppHeader from './components/layout/AppHeader.vue'; 
+import BaseToast from './components/ui/BaseToast.vue';
 
-// import BaseToast from './components/ui/BaseToast.vue'; 
-
-const route = useRoute();
 const isSidebarOpen = ref(true);
-
-// 현재 주소가 '/' (랜딩 페이지)인지 감지하는 변수
-const isLandingPage = computed(() => route.path === '/');
-
-// 대시보드 레이아웃이 필요한 페이지인지 감지
-const isDashboardLayout = computed(() => route.meta.isAuthenticated === true);
 </script>
 
 <template>
-  <!-- 로그인 후 보여줄 대시보드화면 -->
-  <div class="app-wrapper" v-if="isDashboardLayout">
+  <BaseToast />
+  <div class="app-wrapper">
+    
     <AppSidebar
+      v-if="!$route.meta.hideLayout"
       class="sidebar-area" 
       :is-open="isSidebarOpen"
       @toggle="isSidebarOpen = !isSidebarOpen" 
     />
     
     <div class="content-area">
-      <AppHeader v-if="!isLandingPage" class="header-area temp-header">
-
-      </AppHeader>
-
-      <main class="page-area" :class="{ 'no-padding': isLandingPage }">
+      <AppHeader
+        v-if="!$route.meta.hideLayout"
+        class="header-area" 
+        @toggle-menu="isSidebarOpen = !isSidebarOpen" 
+      />
+      
+      <main class="page-area" :class="{ 'no-padding': $route.meta.hideLayout }">
         <RouterView />
       </main>
     </div>
-  </div>
-  <!-- 소개홈페이지, 로그인, 점포등록화면 -->
-  <div v-else>
-    <RouterView />
+    
   </div>
 </template>
 
 <style scoped>
 .app-wrapper {
   display: flex; 
+  height: 100vh;
+  width: 100vw;
   overflow: hidden;
   background-color: #f5f7fb;
 }
@@ -59,33 +54,20 @@ const isDashboardLayout = computed(() => route.meta.isAuthenticated === true);
   overflow: hidden;
 }
 
-/* 양쪽 브랜치에서 각각 추가한 높이와 배경색 속성을 모두 누락 없이 합쳤습니다 */
-.temp-header {
-  height: 50px;
-  background-color: #ffffff;
+.header-area {
   height: 70px;
   background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-
-.main-content {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.sidebar-area {
-  z-index: 10;
-  height: 100%;
 }
 
 .page-area {
   flex: 1;
+  padding: 24px;
   overflow-y: auto;
+}
+
+/* 🚨 추가된 부분: no-padding 클래스가 활성화되면 패딩을 0으로 만듦 */
+.page-area.no-padding {
+  padding: 0;
 }
 </style>

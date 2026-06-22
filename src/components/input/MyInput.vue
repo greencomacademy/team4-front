@@ -32,9 +32,10 @@ const model = defineModel();
 input {
   padding: 10px;
   border: 2px solid var(--personal-color-black);
-  display: flex;
-  align-items: center;
   margin: 10px;
+  box-sizing: border-box;
+  line-height: 1; 
+  font-family: inherit;
 }
 
 .big {
@@ -53,5 +54,10 @@ input {
   width: 90px;
   height: 40px;
   font-size: 14px;
+}
+
+input[type="password"] {
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  letter-spacing: 3px; /* 까만 점들이 너무 다닥다닥 붙지 않게 조절 */
 }
 </style>
