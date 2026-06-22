@@ -10,11 +10,11 @@ import Login from '../views/auth/Login.vue';
 import Register from '../views/auth/Register.vue';
 
 import DashboardView from '../views/dashboard/DashboardView.vue';
-import OrdersView from '../views/order/OrdersView.vue';
 import MenusView from '../views/menu/MenusView.vue';
 import PlatformsView from '../views/platform/PlatformsView.vue';
 import StoreView from '../views/store/StoreView.vue';
 import MockDataView from '../views/mock/MockDataView.vue';
+import OrdersView from '../views/order/OrdersView.vue';
 
 /*
  * 라우트마다 사용할 meta 정보를 생성한다.
@@ -69,7 +69,7 @@ const routes = [
     path: '/store',
     name: 'store',
     component: StoreView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   },
 
   /*
@@ -79,13 +79,13 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   },
   {
     path: '/orders',
     name: 'orders',
     component: OrdersView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   },
 
   /*
@@ -95,7 +95,7 @@ const routes = [
     path: '/menus',
     name: 'menus',
     component: MenusView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   },
 
   /*
@@ -105,13 +105,13 @@ const routes = [
     path: '/platform',
     name: 'platform',
     component: PlatformsView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   },
   
   {
     path: '/mockdata',
     component: MockDataView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   }
 ]
 

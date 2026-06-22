@@ -2,7 +2,6 @@
 import { ref } from 'vue';
 import myAxios from '../../api/myAxios.js';
 import MyButton from '../../components/button/MyButton.vue';
-import myAxios from '../../api/myAxios.js';
 
 // ----------------------
 // 화면 상태 관리
