@@ -13,8 +13,8 @@ const emit = defineEmits(['toggle']);
 // 1. 매장 관리를 제거하고, 새로운 메뉴명(통합 주문 관리 등)을 적용했습니다.
 const navItems = ref([
   { name: '실시간 운영 대시보드', path: '/dashboard' },
-  { name: '통합 주문 관리', path: '/order' },
-  { name: '메뉴 수익 관리', path: '/menu' },
+  { name: '통합 주문 관리', path: '/orders' },
+  { name: '메뉴 수익 관리', path: '/menus' },
   { name: '플랫폼 수수료 관리', path: '/platform' },
   { name: 'Mock 데이터', path: '/mockdata' }
   // 매장 관리는 헤더로 이동했으므로 삭제
@@ -98,17 +98,6 @@ Design System Variables
 1. 사이드바 전체 프레임
 ======================================== */
 .side-bar {
-  height: 100vh;
-  width: var(--sidebar-width);
-  background-color: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
-  box-sizing: border-box;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 50;
-  
-  transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: visible; 
   height: 100vh;
   width: var(--sidebar-width);
   background-color: var(--bg-sidebar);

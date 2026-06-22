@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import myAxios from "../../api/myAxios.js";
+import router from "../../router/index.js";
 
 export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = ref(false);
@@ -13,12 +14,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (loginForm) => {
     try {
-      const url = '/auth/login';
+      const url = '/api/auth/login';
       const res = await myAxios.post(url, loginForm);
       const data = res.data.data;
 
       accessToken.value = data.accessToken;
       isLoggedIn.value = true;
+      router.push({ name: 'dashboard' });
     } catch (error) {
       console.error(error);
       throw error;
@@ -27,7 +29,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const reissue = async () => {
     try {
-      const url = '/auth/reissue-token';
+      const url = '/api/auth/reissue-token';
       const res = await myAxios.post(url);
       const data = res.data.data;
 
@@ -40,7 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async () => {
     try {
-      const url = '/auth/logout';
+      const url = '/api/auth/logout';
 
       const res = await myAxios.post(url);
     } catch (error) {
@@ -52,7 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const registration = async (data) => {
     try {
-      const url = "/auth/register";
+      const url = "/api/auth/register";
 
       await myAxios.post(url, data);
       return;

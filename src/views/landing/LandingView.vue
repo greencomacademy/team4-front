@@ -1,7 +1,9 @@
 <script setup>
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '../../stores/auth/useAuthStore';
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 // 로그인 페이지로 이동
 const goToLogin = () => {
@@ -12,20 +14,37 @@ const goToLogin = () => {
 const goToRegistration = () => {
   router.push('/register');
 };
+
+const goToDashboard = () => {
+  router.push('/dashboard');
+};
+const goTologout = async () => {
+  await authStore.logout();
+  router.push('/');
+};
 </script>
 
 <template>
   <div class="landing-wrapper">
+    
+      <!-- 이 영역은 필요에 따라 추가적인 콘텐츠를 넣을 수 있습니다. -->
     <nav class="landing-nav">
       <div class="logo">
         <span class="logo-icon">📊</span>
         <strong>DO</strong> PROFIT
       </div>
       <div class="nav-actions">
-        <button class="btn btn-ghost" @click="goToLogin">로그인</button>
-        <button class="btn btn-primary" @click="goToRegistration">점포 등록하기</button>
+        <template v-if="authStore.isLoggedIn">
+          <button class="btn btn-ghost" @click="goTologout">로그아웃</button>
+          <button class="btn btn-primary" @click="goToDashboard">대시보드</button>
+        </template>
+        <template v-else>
+          <button class="btn btn-ghost" @click="goToLogin">로그인</button>
+          <button class="btn btn-primary" @click="goToRegistration">점포 등록하기</button>
+        </template>
       </div>
     </nav>
+    
 
     <header class="hero-section">
       <div class="hero-content">
