@@ -109,17 +109,6 @@ Design System Variables
   
   transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
   overflow: visible; 
-  height: 100vh;
-  width: var(--sidebar-width);
-  background-color: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
-  box-sizing: border-box;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 50;
-  
-  transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: visible; 
 }
 
 .side-bar.fold {
