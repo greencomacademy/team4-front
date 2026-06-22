@@ -10,13 +10,6 @@ import OrdersView from '../views/order/OrdersView.vue'
 import MenusView from '../views/menu/MenusView.vue'
 import StoreView from '../views/store/StoreView.vue'
 
-const setMeta = (isAuthenticated, isGuestOnly) => {
-  return {
-    isAuthenticated,
-    isGuestOnly,
-  }
-}
-
 const routes = [
   {
     path: '/',
@@ -40,39 +33,39 @@ const routes = [
     path: '/store',
     name: 'store',
     component: StoreView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   },
   {
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   },
   {
     path: '/order',
     name: 'order',
     component: OrdersView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   },
   {
     path: '/menu',
     name: 'menu',
     component: MenusView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   },
   {
     path: '/platform',
     name: 'platform',
     component: PlatformsView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   },
-  
   {
     path: '/mockdata',
+    name: 'mockdata',
     component: MockDataView,
-    meta: { isGuestOnly: true },
+    meta: { isAuthenticated: true },
   }
-]
+];
 
 const router = createRouter({
   history: createWebHistory(),
@@ -86,6 +79,7 @@ router.beforeEach(async (to, from, next) => {
     try {
       await authStore.reissue();
     } catch (error) {
+      console.error(error);
     }
   }
 
@@ -94,7 +88,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if(to.meta.isGuestOnly && authStore.isLoggedIn) {
-    return next('/');
+    return next('/dashboard');
   }
 
   next();
