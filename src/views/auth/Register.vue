@@ -3,42 +3,41 @@ import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import MyInput from '../../components/input/MyInput.vue';
 import MyButton from '../../components/button/MyButton.vue';
-
 import { useAuthStore } from '../../stores/auth/useAuthStore.js';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-// 로그인 요청 중 중복 클릭을 방지하기 위한 로딩 상태 관리
 const isLoading = ref(false);
 
-// 입력한 이메일 비밀번호를 저장
-const loginForm = reactive({
+const registerForm = reactive({
   email: '',
   password: '',
+  passwordChk: '',
 });
 
-// 로그인 폼 제출 함수
-const handleSubmit = async () => {
-// 이미 로그인 요청 진행 중인 경우 추가 요청 차단
-if (isLoading.value) return;
+const handleRegister = async () => {
+  if (isLoading.value) return;
+
+  if (registerForm.password !== registerForm.passwordChk) {
+    alert('비밀번호가 서로 일치하지 않습니다.');
+    return;
+  }
 
   try {
-    // 이메일 비밀번호 모두 입력됐을 때만 로그인 성공
-    if(loginForm.email && loginForm.password) {
-      isLoading.value = true; 
-
-      // 스토어의 로그인 액션 호출
-      await authStore.login(loginForm);
-      
-      // 로그인 성공시 메인 페이지로 페이지 이동
-      router.push('/');
-    }
+    isLoading.value = true;
+    
+    // API 요청
+    await authStore.registration({
+      email: registerForm.email,
+      password: registerForm.password,
+    });
+    
+    alert('회원가입 완료');
+    router.push('/login');
   } catch (error) {
-      const message = error.response?.data?.data || error.response?.data?.message || '로그인에 실패했습니다.';
-
-      alert(message);
-      return;
+    const message = error.response?.data?.data || error.response?.data?.message || "회원가입에 실패했습니다.";
+    alert(message);
   } finally {
     isLoading.value = false;
   }
@@ -57,28 +56,26 @@ if (isLoading.value) return;
           바로 시작하세요.
         </h1>
         <p class="left-desc">
-          이메일과 비밀번호로 계정을 만든 뒤 매장 등록과 기준정보 설정으로<br/>
-          이어집니다.
+          이메일과 비밀번호로 계정을 만든 뒤 매장 등록과 기준정보 설정으로 이어집니다.
         </p>
       </div>
 
       <div class="right-panel">
         <div class="right-header">
           <span class="badge-step">1차</span>
-          <h2 class="right-title">로그인</h2>
-          <p class="right-desc">등록한 점주 계정으로 접속합니다.</p>
+          <h2 class="right-title">회원가입</h2>
+          <p class="right-desc">점주 계정을 생성합니다.</p>
         </div>
 
-        <form @submit.prevent="handleSubmit" class="auth-form">
+        <form @submit.prevent="handleRegister" class="auth-form">
           <div class="input-group">
             <label class="input-label">이메일</label>
             <div class="input-wrapper">
               <MyInput
-                :type="'email'"
-                :placeholder="'owner@deliveryinside.com'"
-                :readonly="false"
+                type="email"
+                placeholder="owner@deliveryinside.com"
                 :required="true"
-                v-model="loginForm.email"
+                v-model="registerForm.email"
               />
             </div>
           </div>
@@ -87,11 +84,22 @@ if (isLoading.value) return;
             <label class="input-label">비밀번호</label>
             <div class="input-wrapper">
               <MyInput
-                :type="'password'"
-                :placeholder="'••••••••••••'"
-                :readonly="false"
+                type="password"
+                placeholder="영문·숫자·특수문자 8~20자"
                 :required="true"
-                v-model="loginForm.password"
+                v-model="registerForm.password"
+              />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">비밀번호 확인</label>
+            <div class="input-wrapper">
+              <MyInput
+                type="password"
+                placeholder="••••••••••••"
+                :required="true"
+                v-model="registerForm.passwordChk"
               />
             </div>
           </div>
@@ -101,15 +109,16 @@ if (isLoading.value) return;
               :btn-type="'submit'"
               :color="'primary'"
               :size="'large'"
-              :content="isLoading ? '로그인 중...' : '로그인'"
+              :content="isLoading ? '처리 중...' : '회원가입'"
+              :disabled="isLoading"
               class="full-width-btn"
             />
           </div>
         </form>
 
         <div class="sub-link">
-          <span class="question-text">계정이 없으신가요?</span>
-          <router-link to="/register" class="register">회원가입</router-link>
+          <span class="question-text">이미 계정이 있으신가요?</span>
+          <router-link to="/login" class="login-link">로그인</router-link>
         </div>
       </div>
 
@@ -125,8 +134,7 @@ Design System Variables
   --bg-main: #f4f6fc;
   
   --panel-dark: #20354b;
-  /* 우측 하단으로 갈수록 #87CEEB로 은은하게 밝아지는 그라데이션 */
-  --panel-dark-gradient: linear-gradient(150deg, #1c2e42 30%, #2a4e73 70%, #87ceeb 110%);
+  --panel-dark-gradient: linear-gradient(135deg, #1c2e42 0%, #2a4e73 100%);
   
   --primary: #3b82f6;
   --primary-hover: #2563eb;
@@ -151,8 +159,8 @@ Split Card Layout (스플릿 레이아웃 크기 확장)
 .split-card {
   display: flex;
   width: 100%;
-  max-width: 1000px; /* 기존 900px에서 1000px로 확장 */
-  min-height: 600px; /* 기존 540px에서 600px로 확장 */
+  max-width: 1000px; /* 확장 */
+  min-height: 600px; /* 확장 */
   background: #ffffff;
   border-radius: 16px;
   overflow: hidden; 
@@ -160,12 +168,12 @@ Split Card Layout (스플릿 레이아웃 크기 확장)
 }
 
 /* ========================================
-Left Panel 
+Left Panel
 ======================================== */
 .left-panel {
   flex: 1.1; 
   background: var(--panel-dark-gradient);
-  padding: 80px 60px; /* 카드 크기에 맞춰 여백도 늘림 */
+  padding: 80px 60px; /* 여백 확장 */
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -187,7 +195,7 @@ Left Panel
 
 .left-title {
   color: #ffffff;
-  font-size: 36px; /* 글자 크기 살짝 키움 */
+  font-size: 36px; /* 폰트 확장 */
   font-weight: 800;
   line-height: 1.4;
   letter-spacing: -1px;
@@ -202,11 +210,11 @@ Left Panel
 }
 
 /* ========================================
-Right Panel 
+Right Panel
 ======================================== */
 .right-panel {
   flex: 1;
-  padding: 80px 60px; /* 카드 크기에 맞춰 여백도 늘림 */
+  padding: 80px 60px; /* 여백 확장 */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -246,7 +254,7 @@ Form Elements
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 24px; /* 요소 간격 넓힘 */
+  gap: 24px; /* 입력 폼 간격 확장 */
 }
 
 .input-group {
@@ -264,20 +272,18 @@ Form Elements
 .input-wrapper {
   width: 100%;
 }
-
-/* 폼 높이도 버튼 비율에 맞춰 살짝 키워줍니다 */
 .input-wrapper :deep(input),
 .input-wrapper :deep(.input-container) {
   width: 100%;
-  height: 48px; /* 입력창 높이 지정 */
+  height: 48px; /* 인풋 높이 확장 시도 */
   box-sizing: border-box;
 }
 
 /* ========================================
-버튼 디자인 (사이즈 대폭 키움)
+버튼 디자인 (사이즈 대폭 키움 시도)
 ======================================== */
 .btn-group {
-  margin-top: 16px; /* 버튼 위쪽 간격 확보 */
+  margin-top: 16px;
 }
 
 .full-width-btn {
@@ -285,9 +291,11 @@ Form Elements
   display: block;
 }
 
-.full-width-btn :deep(button) {
+/* MyButton의 루트 혹은 내부 button 요소 제어 시도 */
+.full-width-btn :deep(button),
+.full-width-btn :deep(.btn) {
   width: 100%;
-  height: 56px; /* 버튼 높이 대폭 확장 */
+  height: 56px; 
   font-size: 16px; 
   font-weight: 700;
   border-radius: 8px; 
@@ -314,7 +322,7 @@ Sub Link Area
   font-weight: 500;
 }
 
-.register {
+.login-link {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-main); 
@@ -322,7 +330,7 @@ Sub Link Area
   transition: color 0.2s ease;
 }
 
-.register:hover {
+.login-link:hover {
   color: var(--primary);
   text-decoration: underline;
 }

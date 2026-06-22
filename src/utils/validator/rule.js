@@ -31,8 +31,8 @@ export const passwordChk = (password, passwordChk) => {
     return '비밀번호 확인은 필수 입니다.';
   }
 
-   return password === passwordChk ? '' : '비밀번호와 비밀번호 확인이 일치하지 않습니다';
-   
+  return password === passwordChk ? '' : '비밀번호와 비밀번호 확인이 일치하지 않습니다';
+  
 }
 
 export const nick = (val) => {

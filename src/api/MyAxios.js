@@ -1,15 +1,14 @@
 import axios from "axios";
-import { useAuthStore } from "../store/auth/useAuthStore";
+import { useAuthStore } from "../stores/auth/useAuthStore";
 import { jwtDecode } from "jwt-decode";
 import dayjs from "dayjs";
 
 const myAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, 
+  baseURL: 'http://localhost:8080',
 
   headers: {
     'Content-Type': 'application/json', 
   },
-
 
   withCredentials: true,
 });
@@ -17,7 +16,7 @@ const myAxios = axios.create({
 myAxios.interceptors.request.use(async (config) => {
   const authStore = useAuthStore();
   let accessToken = authStore.accessToken;
-  const denyUrl = /^\/api\/reissue-token$/;
+  const denyUrl = /^\/auth\/reissue-token$/;
   
   if(!denyUrl.test(config.url) && authStore.isLoggedIn) {
     const claims = jwtDecode(accessToken);

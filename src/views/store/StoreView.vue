@@ -1,7 +1,7 @@
 <script setup>
 import { onBeforeMount, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useStoreStore } from '../../store/store/useStoreStore';
+import { useStoreStore } from '../../stores/store/useStoreStore';
 
 const router = useRouter();
 const store = useStoreStore();
