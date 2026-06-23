@@ -7,7 +7,7 @@ import MyButton from '../../components/button/MyButton.vue';
 // 화면 상태 관리
 // ----------------------
 
-const axios = myAxios();
+const axios = myAxios;
 
 // 발표 시연용 카드 지연 테스트 수량 저장 변수
 const delayCnt = ref(1);

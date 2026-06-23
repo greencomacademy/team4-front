@@ -30,8 +30,7 @@ const goTologout = async () => {
       <!-- 이 영역은 필요에 따라 추가적인 콘텐츠를 넣을 수 있습니다. -->
     <nav class="landing-nav">
       <div class="logo">
-        <span class="logo-icon">📊</span>
-        <strong>DO</strong> PROFIT
+        <img src="/logo.png" class="main-logo">
       </div>
       <div class="nav-actions">
         <template v-if="authStore.isLoggedIn">
@@ -129,11 +128,18 @@ Design System Variables
 /* ========================================
 상단 네비게이션 바
 ======================================== */
+/* 1. 네비게이션 바 두께 줄이기 */
 .landing-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 40px;
+  
+  /* 1. 상하 패딩을 0으로 없애고 좌우 40px만 유지합니다 */
+  padding: 0 40px; 
+  
+  /* 2. 네비게이션 바 높이를 확대된 로고 크기(40px * 2배 = 80px)에 딱 맞춥니다 */
+  height: 80px; 
+  
   background-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(8px);
   position: sticky;
@@ -152,8 +158,19 @@ Design System Variables
   letter-spacing: -0.5px;
 }
 
-.logo strong {
-  color: var(--primary);
+/* 2. 로고 레이아웃 분리 및 확대 적용 */
+.main-logo {
+  /* 네비게이션 바를 밀어내지 않도록 실제 차지하는 공간(높이)은 작게 고정합니다 */
+  height: 40px; 
+  width: auto;  
+  object-fit: contain; 
+  cursor: pointer;
+  
+  /* [핵심] 시각적으로만 크기를 n배 확대합니다. (필요에 따라 1.5 ~ 2.5 사이로 조절하세요) */
+  transform: scale(2.0); 
+  
+  /* 확대될 때 이미지가 영역 밖으로 밀려나지 않도록 기준점을 왼쪽 중앙으로 고정합니다 */
+  transform-origin: left center; 
 }
 
 /* 버튼 공통 스타일 */
