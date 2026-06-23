@@ -30,6 +30,11 @@ if (isLoading.value) return;
 
       // 스토어의 로그인 액션 호출
       await authStore.login(loginForm);
+       /*
+       * 스토어는 인증 상태만 관리하고,
+       * 화면 이동은 Login.vue에서 처리한다.
+       */
+      router.push({ name: 'dashboard' });
       
       // 로그인 성공시 메인 페이지로 페이지 이동
       router.push('/dashboard');
