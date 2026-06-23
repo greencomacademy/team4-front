@@ -16,24 +16,44 @@ const myAxios = axios.create({
 
 myAxios.interceptors.request.use(async (config) => {
   const authStore = useAuthStore();
-  let accessToken = authStore.accessToken;
-  const denyUrl = /^\/api\/auth\/reissue-token$/;
+  const authUrl = /^\/api\/auth\/(login|register|reissue-token|logout)$/;  
+  const requestUrl = config.url || '';
+  const isAuthRequest = authUrl.test(requestUrl);
   
-  if(!denyUrl.test(config.url) && authStore.isLoggedIn) {
-    const claims = jwtDecode(accessToken);
-    const now = dayjs().unix();
-    const expTime = dayjs.unix(claims.exp).add(-5, 'minute').unix();
+  let accessToken = authStore.accessToken;
+  /*
+   * 인증 관련 요청이 아니고,
+   * Access Token이 메모리에 없으면
+   * Refresh Token 쿠키로 복구를 시도한다.
+   */
+  if(!isAuthRequest && !accessToken) {
+     const reissueSuccess = await authStore.reissue();
 
+    if(reissueSuccess) {
+      accessToken = authStore.accessToken;
+    } 
+  }
+   /*
+   * Access Token이 있으면 만료 5분 전 재발급한다.
+   */
+  if(!isAuthRequest && accessToken) {
+    try {
+      const claims = jwtDecode(accessToken);
+      const now = dayjs().unix();
+      const expTime = dayjs.unix(claims.exp).add(-5, 'minute').unix();
+   
     if(now >= expTime) {
-      try {
-        await authStore.reissue();
+      const reissueSuccess = await authStore.reissue();
+      if(reissueSuccess) {
         accessToken = authStore.accessToken;
-      } catch (error) {
-        console.error(error?.response);
       }
     }
+  } catch (error) {
+   authStore.clearAuthStore();
+   accessToken = '';
   }
-  if(accessToken) {
+}
+  if(!isAuthRequest && accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
   

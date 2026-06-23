@@ -17,7 +17,7 @@ const navItems = ref([
   { name: '메뉴 수익 관리', path: '/menus' },
   { name: '플랫폼 수수료 관리', path: '/platform' },
   { name: 'Mock 데이터', path: '/mockdata' }
-  // 매장 관리는 헤더로 이동했으므로 삭제
+  // 매장 관리는 헤더로 이동했으므로 삭제 - { name: '매장 관리', path: '/stores' }는 물어보고 정할것
 ]);
 </script>
 
