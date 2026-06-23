@@ -54,13 +54,21 @@ const goTologout = async () => {
           수수료 부담은 줄이고, 마진과 수익은 투명하게 관리하세요.<br/>
           데이터 기반의 의사결정으로 배달 매출을 극대화할 수 있습니다.
         </p>
+        <template v-if="authStore.isLoggedIn">
+        <button class="btn btn-lg btn-primary shadow-glow" @click="goToDashboard">
+          지금 바로 시작하기
+          </button>
+          </template>
+          <template v-else>
         <button class="btn btn-lg btn-primary shadow-glow" @click="goToLogin">
           지금 바로 시작하기
+          </button>
+          </template>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-right">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
-        </button>
+        
       </div>
     </header>
 
