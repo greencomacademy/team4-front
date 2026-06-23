@@ -11,7 +11,7 @@ export const useStoreStore = defineStore('store',() => {
   // 현재 매장정보 표시용 콜백
   const currentStore = async () => {
     try {
-      const url = '/api/stores/me'; // ✅ 수정됨 (store -> stores)
+      const url = '/stores/me'; // ✅ 수정됨 (store -> stores)
       const result = await myAxios.get(url);
 
       currentData.value = result.data.data;
@@ -24,7 +24,7 @@ export const useStoreStore = defineStore('store',() => {
   // 매장등록 콜백
   const storeForm = async (myStoreRegistration) => {
     try {
-      const url = '/api/stores/newstore'; // ✅ 수정됨 (store -> stores, newStore -> newstore)
+      const url = '/stores/newstore'; // ✅ 수정됨 (store -> stores, newStore -> newstore)
       const res = await myAxios.post(url, myStoreRegistration);
     } catch (error) {
       console.error(error);
@@ -35,7 +35,7 @@ export const useStoreStore = defineStore('store',() => {
   // 현재 매장 삭제 콜백
   const deleteStore = async () => {
     try {
-      const url = `/api/stores/me`; // ✅ 수정됨 (store -> stores)
+      const url = `/stores/me`; // ✅ 수정됨 (store -> stores)
       const res = await myAxios.delete(url);
 
       currentData.value = null;
@@ -48,7 +48,7 @@ export const useStoreStore = defineStore('store',() => {
   // 현재 매장 수정 콜백
   const updateStore = async (myStoreUpdate) => {
     try {
-      const url = `/api/stores/me`; // ✅ 수정됨 (store -> stores)
+      const url = `/stores/me`; // ✅ 수정됨 (store -> stores)
       const res = await myAxios.patch(url, myStoreUpdate);
 
       // 업데이트 후 최신 매장정보를 다시 불러옵니다.
