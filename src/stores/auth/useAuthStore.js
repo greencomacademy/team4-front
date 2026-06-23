@@ -9,12 +9,32 @@ export const useAuthStore = defineStore('auth', () => {
    * Refresh Token Rotation 중복 요청 방지용
    * 새로고침 직후 여러 API가 동시에 reissue를 호출하는 문제를 막는다.
    */
+// 브라우저에 로그인했다면 흔적을 남겨둬서 랜딩페이지에서도 리이슈가안뜨게함
+ const hasLoginHint = ref(
+    localStorage.getItem('hasLoginHint') === 'true'
+  );
+
   let reissuePromise = null;
+
+ const setLoginHint = () => {
+    hasLoginHint.value = true;
+    localStorage.setItem('hasLoginHint', 'true');
+  };
+
+  const clearLoginHint = () => {
+    hasLoginHint.value = false;
+    localStorage.removeItem('hasLoginHint');
+  };
 
   const clearAuthStore = () => {
     isLoggedIn.value = false;
     accessToken.value = '';
   }
+
+   const clearAllAuthState = () => {
+    clearAuthStore();
+    clearLoginHint();
+  };
 
   const login = async (loginForm) => {
     try {
@@ -24,6 +44,9 @@ export const useAuthStore = defineStore('auth', () => {
 
       accessToken.value = data.accessToken;
       isLoggedIn.value = true;
+
+      // 로그인 성공한 브라우저라는 힌트저장, 토큰저장이 아님(true,false)
+      setLoginHint();
       
       return true;
     } catch (error) {
@@ -50,6 +73,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       accessToken.value = data.accessToken;
       isLoggedIn.value = true;
+      // refresh 토큰 로그인 복구 성공
+      setLoginHint();
 
       return true;
     } catch (error) {
@@ -70,7 +95,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error) {
       console.error(error);
     } finally {
-      clearAuthStore();
+      clearAllAuthState();
     }
   }
 
@@ -95,7 +120,9 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     isLoggedIn,
     accessToken,
+    hasLoginHint,
 
+    clearAllAuthState,
     clearAuthStore,
     login,
     reissue,
