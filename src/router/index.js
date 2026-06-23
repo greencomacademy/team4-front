@@ -129,6 +129,7 @@ router.beforeEach(async (to) => {
   /*
    * 로그인이 필요한 화면인데 Access Token이 없다면
    * Refresh Token 쿠키로 로그인 상태 복구를 먼저 시도한다.
+   * reissue 시도
    */
   if (
     to.meta.isAuthenticated &&
@@ -161,7 +162,8 @@ router.beforeEach(async (to) => {
    */
   if (
     to.meta.isGuestOnly &&
-    !authStore.accessToken
+    !authStore.accessToken &&
+    authStore.hasLoginHint
   ) {
     const reissueSuccess = await authStore.reissue();
 
@@ -171,7 +173,7 @@ router.beforeEach(async (to) => {
       };
     }
   }
-
+  // 이미 로그인 상태면 게스트 페이지 접근 차단
   if (
     to.meta.isGuestOnly &&
     authStore.isLoggedIn
