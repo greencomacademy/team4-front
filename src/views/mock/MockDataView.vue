@@ -48,6 +48,7 @@ const handleError = (error) => {
 // 1. 일반 Mock 주문 (수량/시나리오 직접 지정)
 const createBaseMockData = async () => {
   try {
+    // 💡 백엔드가 기대하는 기본 데이터를 객체 형태로 실어서 보냅니다.
     await axios.post('/api/mock-data/orders', {
       scenario: generalScenario.value,
       count: generalCnt.value

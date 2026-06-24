@@ -4,7 +4,8 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
-  server: {
+
+    server: {
     proxy: {
       // '/auth' 대신 '/api'로 변경합니다.
       '/api': {
@@ -12,5 +13,6 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
-  }
+    }
 })
+
