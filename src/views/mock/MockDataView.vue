@@ -43,13 +43,16 @@ const decreaseDelayOrder = () => {
 // 기본 Mock 데이터 생성
 const createBaseMockData = async () => {
   try {
-    await axios.post('/api/mock-data/orders/basic');
+    // 💡 백엔드가 기대하는 기본 데이터를 객체 형태로 실어서 보냅니다.
+    await axios.post('/api/mock-data/orders', {
+      scenario: 'MIXED',
+      count: 1
+    });
     alert('기본 Mock 데이터가 성공적으로 생성되었습니다.');
   } catch (error) {
     handleError(error);
   }
 };
-
 // 일반 Mock 주문 생성
 const createMockOrders = async () => {
   try {
@@ -65,29 +68,35 @@ const createMockOrders = async () => {
 };
 
 // 발표용 GROUP 주문 생성
+//  수정 코드
 const createGroupOrder = async () => {
   try {
-    await axios.post('/api/mock-data/orders/group');
+    await axios.post('/api/mock-data/orders', {
+      scenario: 'GROUP',
+      count: 1
+    });
     alert('단체 주문이 성공적으로 생성되었습니다.');
   } catch (error) {
     handleError(error);
   }
 };
 
-// 발표용 PREMIUM 주문 생성
 const createPremiumOrder = async () => {
   try {
-    await axios.post('/api/mock-data/orders/premium');
+    await axios.post('/api/mock-data/orders', {
+      scenario: 'PREMIUM',
+      count: 1
+    });
     alert('프리미엄 주문이 성공적으로 생성되었습니다.');
   } catch (error) {
     handleError(error);
   }
 };
-
 // 발표용 지연 테스트 주문 생성
 const createDelayOrder = async () => {
   try {
-    await axios.post('/api/mock-data/orders/delay-test', {
+    await axios.post('/api/mock-data/orders', {
+      scenario: 'DELAY_TEST',
       count: delayCnt.value
     });
 
