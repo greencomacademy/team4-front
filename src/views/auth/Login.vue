@@ -1,353 +1,267 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import MyInput from '../../components/input/MyInput.vue';
-import MyButton from '../../components/button/MyButton.vue';
-
-import { useAuthStore } from '../../stores/auth/useAuthStore.js';
+import { useAuthStore } from '../../stores/auth/useAuthStore.js'; // 실제 경로에 맞게 조정 필요
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-// 로그인 요청 중 중복 클릭을 방지하기 위한 로딩 상태 관리
+// 로그인 관련 상태 관리
 const isLoading = ref(false);
+const showPassword = ref(false);
 
-// 입력한 이메일 비밀번호를 저장
 const loginForm = reactive({
   email: '',
   password: '',
 });
 
+// 비밀번호 숨김/보기 토글
+const togglePassword = () => {
+  showPassword.value = !showPassword.value;
+};
+
 // 로그인 폼 제출 함수
 const handleSubmit = async () => {
-// 이미 로그인 요청 진행 중인 경우 추가 요청 차단
-if (isLoading.value) return;
+  if (isLoading.value) return;
 
   try {
-    // 이메일 비밀번호 모두 입력됐을 때만 로그인 성공
     if(loginForm.email && loginForm.password) {
-      isLoading.value = true; 
+      isLoading.value = true;
 
-      // 스토어의 로그인 액션 호출
-      await authStore.login(loginForm);
-       /*
-       * 스토어는 인증 상태만 관리하고,
-       * 화면 이동은 Login.vue에서 처리한다.
-       */
-      router.push({ name: 'dashboard' });
+      await authStore.login({
+        email: loginForm.email,
+        password: loginForm.password
+      });
       
-      // 로그인 성공시 메인 페이지로 페이지 이동
+      // 로그인 성공 시 메인 대시보드로 이동
       router.push('/dashboard');
     }
   } catch (error) {
-      const message = error.response?.data?.data || error.response?.data?.message || '로그인에 실패했습니다.';
-
-      alert(message);
-      return;
+    const message = error.response?.data?.data || error.response?.data?.message || '로그인에 실패했습니다.';
+    alert(message);
   } finally {
     isLoading.value = false;
   }
-}
+};
 </script>
 
 <template>
-  <div class="auth-wrapper">
-    <div class="split-card">
-      
-      <div class="left-panel">
-        <div class="badge-di">DI</div>
-        <h1 class="left-title">
-          매장 운영 기준을<br/>
-          설정하고<br/>
-          바로 시작하세요.
-        </h1>
-        <p class="left-desc">
-          이메일과 비밀번호로 계정을 만든 뒤 매장 등록과 기준정보 설정으로<br/>
-          이어집니다.
-        </p>
-      </div>
+  <div class="pos-layout">
+    <main class="pos-content">
+      <div class="login-card">
+        <img src="/logo.png" alt="BAEF 로고" class="brand-logo" />
 
-      <div class="right-panel">
-        <div class="right-header">
-          <span class="badge-step">1차</span>
-          <h2 class="right-title">로그인</h2>
-          <p class="right-desc">등록한 점주 계정으로 접속합니다.</p>
-        </div>
-
-        <form @submit.prevent="handleSubmit" class="auth-form">
-          <div class="input-group">
-            <label class="input-label">이메일</label>
-            <div class="input-wrapper">
-              <MyInput
-                :type="'email'"
-                :placeholder="'owner@deliveryinside.com'"
-                :readonly="false"
-                :required="true"
-                v-model="loginForm.email"
-              />
-            </div>
-          </div>
-
-          <div class="input-group">
-            <label class="input-label">비밀번호</label>
-            <div class="input-wrapper">
-              <MyInput
-                :type="'password'"
-                :placeholder="'••••••••••••'"
-                :readonly="false"
-                :required="true"
-                v-model="loginForm.password"
-              />
-            </div>
-          </div>
-          
-          <div class="btn-group">
-            <MyButton
-              :btn-type="'submit'"
-              :color="'primary'"
-              :size="'large'"
-              :content="isLoading ? '로그인 중...' : '로그인'"
-              class="full-width-btn"
+        <form class="login-form" @submit.prevent="handleSubmit">
+          <div class="form-group">
+            <label>이메일</label>
+            <input
+              type="email"
+              v-model="loginForm.email"
+              placeholder="이메일을 입력해주세요"
+              required
             />
           </div>
+
+          <div class="form-group password-group">
+            <label>비밀번호</label>
+            <div class="input-wrapper">
+              <input
+                :type="showPassword ? 'text' : 'password'"
+                v-model="loginForm.password"
+                placeholder="비밀번호를 입력해주세요"
+                required
+              />
+              <button type="button" class="icon-btn" @click="togglePassword" tabindex="-1">
+                <svg v-if="!showPassword" viewBox="0 0 24 24" class="eye-icon">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+                <svg v-else viewBox="0 0 24 24" class="eye-icon">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn" :disabled="isLoading">
+            {{ isLoading ? '로그인 중...' : '로그인' }}
+          </button>
+
+          <button type="button" class="signup-btn" @click="router.push('/register')">
+            회원가입
+          </button>
         </form>
-
-        <div class="sub-link">
-          <span class="question-text">계정이 없으신가요?</span>
-          <router-link to="/register" class="register">회원가입</router-link>
-        </div>
       </div>
-
-    </div>
+    </main>
   </div>
 </template>
 
 <style scoped>
-/* ========================================
-Design System Variables
-======================================== */
-.auth-wrapper {
-  --bg-main: #f4f6fc;
-  
-  --panel-dark: #20354b;
-  /* 우측 하단으로 갈수록 #87CEEB로 은은하게 밝아지는 그라데이션 */
-  --panel-dark-gradient: linear-gradient(150deg, #1c2e42 30%, #2a4e73 70%, #87ceeb 110%);
-  
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  
-  --text-main: #111827;
-  --text-sub: #6b7280;
-  
-  --shadow-card: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
-
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-main);
-  padding: 20px;
-  font-family: 'Pretendard', -apple-system, sans-serif;
-}
-
-/* ========================================
-Split Card Layout (스플릿 레이아웃 크기 확장)
-======================================== */
-.split-card {
-  display: flex;
-  width: 100%;
-  max-width: 1000px; /* 기존 900px에서 1000px로 확장 */
-  min-height: 600px; /* 기존 540px에서 600px로 확장 */
-  background: #ffffff;
-  border-radius: 16px;
-  overflow: hidden; 
-  box-shadow: var(--shadow-card);
-}
-
-/* ========================================
-Left Panel 
-======================================== */
-.left-panel {
-  flex: 1.1; 
-  background: var(--panel-dark-gradient);
-  padding: 80px 60px; /* 카드 크기에 맞춰 여백도 늘림 */
+/* ============================================================
+   전체 배경 레이아웃 (헤더/푸터 없음)
+   ============================================================ */
+.pos-layout {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  height: 100vh;
+  width: 100vw;
+  background-color: #f3f4f6;
+  font-family: 'Pretendard', sans-serif;
+  overflow: hidden;
 }
 
-.badge-di {
-  width: 48px;
-  height: 48px;
-  background-color: #4a77a4; 
-  color: #ffffff;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 18px;
-  margin-bottom: 40px;
-}
-
-.left-title {
-  color: #ffffff;
-  font-size: 36px; /* 글자 크기 살짝 키움 */
-  font-weight: 800;
-  line-height: 1.4;
-  letter-spacing: -1px;
-  margin-bottom: 24px;
-}
-
-.left-desc {
-  color: #a5b9ce; 
-  font-size: 16px;
-  line-height: 1.6;
-  word-break: keep-all;
-}
-
-/* ========================================
-Right Panel 
-======================================== */
-.right-panel {
+/* ============================================================
+   중앙 로그인 컨텐츠 
+   ============================================================ */
+.pos-content {
   flex: 1;
-  padding: 80px 60px; /* 카드 크기에 맞춰 여백도 늘림 */
   display: flex;
-  flex-direction: column;
   justify-content: center;
+  align-items: center;
 }
 
-.right-header {
-  margin-bottom: 36px;
-}
-
-.badge-step {
-  display: inline-block;
-  background-color: #eff6ff;
-  color: var(--primary);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 800;
-  margin-bottom: 12px;
-}
-
-.right-title {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--text-main);
-  margin-bottom: 8px;
-  letter-spacing: -0.5px;
-}
-
-.right-desc {
-  font-size: 14px;
-  color: var(--text-sub);
-}
-
-/* ========================================
-Form Elements
-======================================== */
-.auth-form {
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  background-color: #ffffff;
+  padding: 50px 40px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 24px; /* 요소 간격 넓힘 */
+  align-items: center;
 }
 
-.input-group {
+.brand-logo {
+  max-width: 180px;
+  height: auto;
+  margin-bottom: 40px;
+  object-fit: contain;
+}
+
+.login-form {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
-.input-label {
-  font-size: 13px;
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+/* 비밀번호 영역과 로그인 버튼 사이의 간격 추가 */
+.password-group {
+  margin-bottom: 36px; 
+}
+
+.form-group label {
+  font-size: 15px;
   font-weight: 700;
-  color: #4b5563;
+  color: #111827;
+  margin-bottom: 8px;
 }
 
 .input-wrapper {
-  width: 100%;
-}
-
-/* 폼 높이도 버튼 비율에 맞춰 살짝 키워줍니다 */
-.input-wrapper :deep(input),
-.input-wrapper :deep(.input-container) {
-  width: 100%;
-  height: 48px; /* 입력창 높이 지정 */
-  box-sizing: border-box;
-}
-
-/* ========================================
-버튼 디자인 (사이즈 대폭 키움)
-======================================== */
-.btn-group {
-  margin-top: 16px; /* 버튼 위쪽 간격 확보 */
-}
-
-.full-width-btn {
-  width: 100%;
-  display: block;
-}
-
-.full-width-btn :deep(button) {
-  width: 100%;
-  height: 56px; /* 버튼 높이 대폭 확장 */
-  font-size: 16px; 
-  font-weight: 700;
-  border-radius: 8px; 
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  width: 100%;
 }
 
-/* ========================================
-Sub Link Area
-======================================== */
-.sub-link {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  margin-top: 28px;
+.form-group input {
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  background-color: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 15px;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.2s;
 }
 
-.question-text {
-  font-size: 14px;
-  color: var(--text-sub);
+.form-group input::placeholder {
+  color: #9ca3af;
   font-weight: 500;
 }
 
-.register {
-  font-size: 14px;
+.form-group input:focus {
+  border-color: #2563EB;
+  background-color: #ffffff;
+}
+
+.icon-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.eye-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ============================================================
+   버튼 스타일링
+   ============================================================ */
+.submit-btn {
+  width: 100%;
+  height: 54px;
+  background-color: #2563EB;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--text-main); 
-  text-decoration: none;
-  transition: color 0.2s ease;
+  cursor: pointer;
+  /* 로그인 버튼과 회원가입 버튼 사이 간격 */
+  margin-bottom: 16px; 
+  transition: background-color 0.2s;
 }
 
-.register:hover {
-  color: var(--primary);
-  text-decoration: underline;
+.submit-btn:hover { background-color: #1e4fbb; }
+.submit-btn:disabled { background-color: #93c5fd; cursor: not-allowed; }
+
+.signup-btn {
+  width: 100%;
+  height: 54px;
+  background-color: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-/* ========================================
-반응형 (모바일) 처리
-======================================== */
+.signup-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* 모바일 화면 대응 */
 @media (max-width: 768px) {
-  .split-card {
-    flex-direction: column;
-    min-height: auto;
-  }
-  
-  .left-panel {
-    padding: 50px 30px;
-    flex: none;
-  }
-
-  .right-panel {
-    padding: 50px 30px;
+  .login-card {
+    padding: 40px 20px;
+    box-shadow: none;
+    border-radius: 0;
   }
 }
 </style>

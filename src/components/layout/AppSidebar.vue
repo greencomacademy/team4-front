@@ -24,7 +24,7 @@ const navItems = ref([
 
 // 2. 실시간 대시보드 연동용 가상 데이터 (HTML 시안과 동일 구조)
 const operationSummary = ref({
-  level: '정상',       // 정상, 주의, 위험 단계
+  level: '정상',      // 정상, 주의, 위험 단계
   loadRate: 45,       // 부하율 (%)
   delayRisk: 0,       // 지연 위험 주문 수
   requestRisk: 2,     // 요구사항 확인 주문 수
@@ -49,7 +49,7 @@ const formatMoney = (val) => `${Number(val || 0).toLocaleString('ko-KR')}원`
     
     <div class="sidebar-content">
       <div class="logo-area">
-        <span class="logo-text">DO <strong>PROFIT</strong></span>
+        <img src="/logo.png" alt="배프(BAEF) 로고" class="main-logo" />
       </div>
 
       <section class="side-operation-card" :class="`level-${operationSummary.level}`">
@@ -166,11 +166,23 @@ const formatMoney = (val) => `${Number(val || 0).toLocaleString('ko-KR')}원`
 }
 
 /* ============================================================
-   로고 영역
+   로고 영역 (가운데 정렬 및 크기 확대)
    ============================================================ */
-.logo-area { padding: 30px 26px 18px; }
-.logo-text { font-size: 25px; font-weight: 800; color: var(--text-main); letter-spacing: -0.7px; }
-.logo-text strong { color: var(--primary); }
+.logo-area { 
+  /* 상하 여백 유지, 좌우 여백 자동(center 정렬)을 위해 수정 */
+  padding: 30px 16px 24px; 
+  display: flex;
+  justify-content: center; /* 로고를 완벽하게 가로 중앙으로 정렬 */
+  align-items: center;
+  width: 100%;
+}
+
+.main-logo {
+  height: 100px; /* 기존 38px에서 60px로 대폭 확대 (원하시는 크기에 맞게 조절 가능) */
+  width: auto;
+  max-width: 100%; /* 부모 요소를 넘지 않도록 방지 */
+  object-fit: contain;
+}
 
 /* ============================================================
    사이드바 공통 대시보드 카드 스타일
