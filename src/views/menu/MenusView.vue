@@ -35,7 +35,7 @@ const openAddModal = () => {
 
 const openEditModal = (menu) => {
   isEditMode.value = true;
-  selectedMenuId.value = menu.id; 
+  selectedMenuId.value = menu.menuId; 
   
   formData.menuName = menu.menuName || '';
   formData.menuPrice = menu.menuPrice || '';
@@ -116,17 +116,17 @@ const formatPrice = (price) => {
             <tr 
               v-else 
               v-for="menu in store.menuList" 
-              :key="menu.id" 
+              :key="menu.menuId" 
               @click="openEditModal(menu)" 
               class="clickable-row"
             >
               <td class="font-bold">{{ menu.menuName }}</td>
               <td>{{ formatPrice(menu.menuPrice) }}원</td>
               <td>{{ formatPrice(menu.menuCost) }} / {{ formatPrice(menu.packagingFee) }}</td>
-              <td :class="{'text-green': menu.marginRate >= 50, 'font-bold': true}">
-                {{ menu.marginRate }}%
+              <td :class="{'text-green': menu.expectedMarginRate >= 50, 'font-bold': true}">
+                {{ menu.expectedMarginRate }}%
               </td>
-              <td class="font-bold">{{ menu.cookingBurden }}</td>
+              <td class="font-bold">{{ menu.cookingBurdenLevel }}</td>
             </tr>
           </tbody>
         </table>
