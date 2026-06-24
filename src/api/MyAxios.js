@@ -4,8 +4,10 @@ import { jwtDecode } from "jwt-decode";
 import dayjs from "dayjs";
 
 const myAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-   withCredentials: true,
+  baseURL: 
+  
+  import.meta.env.VITE_API_BASE_URL,
+  withCredentials: true,
 
   headers: {
     'Content-Type': 'application/json', 
