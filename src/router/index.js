@@ -42,7 +42,7 @@ const routes = [
   {
     path: '/',
     name: 'landing',
-    component: LandingView,
+    component: LandingView, // 주소가 '/' 일 때 랜딩 페이지를 띄웁니다.
     meta: { isGuestOnly: true, hideLayout: true }
   },
 
