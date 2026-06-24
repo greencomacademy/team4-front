@@ -11,10 +11,11 @@ import Register from '../views/auth/Register.vue';
 
 import DashboardView from '../views/dashboard/DashboardView.vue';
 import MenusView from '../views/menu/MenusView.vue';
-import PlatformsView from '../views/platform/PlatformsView.vue';
 import StoreView from '../views/store/StoreView.vue';
 import MockDataView from '../views/mock/MockDataView.vue';
 import OrdersView from '../views/order/OrdersView.vue';
+import AllReportView from '../views/report/AllReportView.vue';
+import ProfileView from '../views/profile/ProfileView.vue'; // 내 정보 뷰 임포트 추가
 
 /*
  * 라우트마다 사용할 meta 정보를 생성한다.
@@ -65,12 +66,6 @@ const routes = [
     component: Register,
     meta: { isGuestOnly: true, hideLayout: true }
   },
-  {
-    path: '/store',
-    name: 'store',
-    component: StoreView,
-    meta: { isAuthenticated: true },
-  },
 
   /*
    * 오늘 운영 대시보드
@@ -79,13 +74,17 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
-    meta: { isAuthenticated: true },
+    meta: { isAuthenticated: true, title: '실시간 운영 대시보드' },
   },
+
+  /*
+   * 통합 주문 관리
+   */
   {
     path: '/orders',
     name: 'orders',
     component: OrdersView,
-    meta: { isAuthenticated: true },
+    meta: { isAuthenticated: true, title: '통합 주문 관리' },
   },
 
   /*
@@ -95,25 +94,49 @@ const routes = [
     path: '/menus',
     name: 'menus',
     component: MenusView,
-    meta: { isAuthenticated: true },
+    meta: { isAuthenticated: true, title: '메뉴 수익 관리' },
+  },
+
+  /*
+   * 매장 관리 (기본정보, 플랫폼 수수료, 운영 설정 통합)
+   */
+  {
+    path: '/store',
+    name: 'store',
+    component: StoreView,
+    meta: { isAuthenticated: true, title: '매장 관리' },
+  },
+
+  /*
+   * 운영 리포트 (매출, 취소, 정산, 손실 분석 등)
+   */
+  {
+    path: '/reports',
+    name: 'reports',
+    component: AllReportView,
+    meta: { isAuthenticated: true, title: '운영 리포트' },
   },
 
   /*
    * 발표·테스트용 Mock 데이터 화면
    */
   {
-    path: '/platform',
-    name: 'platform',
-    component: PlatformsView,
-    meta: { isAuthenticated: true },
-  },
-  
-  {
     path: '/mockdata',
+    name: 'mockdata',
     component: MockDataView,
-    meta: { isAuthenticated: true },
+    meta: { isAuthenticated: true, title: 'Mock 데이터 생성 패널' },
+  },
+
+  /*
+   * 내 정보 화면 (프로필)
+   */
+  {
+    path: '/profile',
+    name: 'profile',
+    component: ProfileView,
+    meta: { isAuthenticated: true, title: '내 정보' },
   }
-]
+];
 
 const router = createRouter({
   history: createWebHistory(),
@@ -173,6 +196,7 @@ router.beforeEach(async (to) => {
       };
     }
   }
+  
   // 이미 로그인 상태면 게스트 페이지 접근 차단
   if (
     to.meta.isGuestOnly &&

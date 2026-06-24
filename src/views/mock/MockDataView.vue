@@ -1,99 +1,40 @@
 <script setup>
 import { ref } from 'vue';
 import myAxios from '../../api/myAxios.js';
-import MyButton from '../../components/button/MyButton.vue';
 
-// ----------------------
-// 화면 상태 관리
-// ----------------------
-
+// Axios 인스턴스
 const axios = myAxios;
 
-// 발표 시연용 카드 지연 테스트 수량 저장 변수
-const delayCnt = ref(1);
-
-// 일반 Mock 주문 카드 생산 수량 저장 변수
+// [일반 주문 생성] 상태
 const generalCnt = ref(1); 
-
-// 일반 Mock 주문 카드 선택된 시나리오 저장
 const generalScenario = ref('MIXED');
 
-// ----------------------
-// 화면 제어 증/감
-// ----------------------
+// [지연 테스트 주문 생성] 상태 (캡처 이미지 시안에서는 제거되었으므로 내부 로직에서만 기본값 1 유지)
+const delayCnt = ref(1);
 
-// 지연 테스트 수량 증가 최대 50개
-const increaseDelayOrder = () => {
-  if (delayCnt.value < 50) {
-    delayCnt.value++;
-  }
-};
+// [생성 로그] 기록
+const activeMockLog = ref([]);
 
-// 지연 테스트 수량 감소 최소 1개
-const decreaseDelayOrder = () => {
-  if (delayCnt.value > 1) {
-    delayCnt.value--;
+const addLog = (message) => {
+  activeMockLog.value.unshift(message);
+  // 로그가 너무 길어지지 않게 10개까지만 유지
+  if (activeMockLog.value.length > 10) {
+    activeMockLog.value.pop();
   }
 };
 
 // ----------------------
-// 백엔드 연동 axios
+// 백엔드 연동 로직
 // ----------------------
 
-// 일반 Mock 주문 데이터: 화면에서 선택한 문자열과 입력한 수량 전송
-const createBaseMockData = async () => {
-  try {
-    await axios.post('/api/mock-data/orders', {
-      scenario: generalScenario.value, // select 박스 Enum 값
-      count: generalCnt.value // input 창 입력된 수량
-    })
-    alert(`${generalScenario.value} 시나리오 주문 ${generalCnt.value}개가 성공적으로 생성되었습니다.`);
-  } catch (error) {
-    handleError(error);
-  }
-};
-
-// 발표 시연용 주문 1건 생성(단체/프리미엄): 버튼 클릭 시 GROUP/PREMIUM 1개 생성
-const createScenario = async (scenarioType) => {
-  try {
-    await axios.post('/api/mock-data/orders', { scenario: scenarioType, count: 1 });
-    alert(`${scenarioType} 주문이 성공적으로 생성되었습니다.`);
-  } catch (error) {
-    handleError(error);
-  }
-};
-
-// 발표 시연용 지연 테스트 주문 생성: DELAY_TEST
-const createDelayOrder = async () => {
-  try {
-    await axios.post('/api/mock-data/orders', { scenario: 'DELAY_TEST', count: delayCnt.value });
-    alert(`지연 테스트 주문 ${delayCnt.value}개가 성공적으로 생성되었습니다.`);
-  } catch (error) {
-    handleError(error);
-  }
-};
-
-// 로그인한 매장의 모든 Mock 주문 일괄 삭제
-const deleteMockOrders = async () => {
-  if (!confirm('정말 로그인한 매장의 모든 Mock 주문을 삭제하시겠습니까?')) return;
-  try {
-    await axios.delete('/api/mock-data/orders');
-    alert('Mock 주문이 완전히 삭제되었습니다.');
-  } catch (error) {
-    handleError(error);
-  }
-};
-
-// 에러
+// 에러 핸들러
 const handleError = (error) => {
   if (error.response && error.response.data) {
     const errorCode = error.response.data.code;
-    
     if (errorCode === 'E04' || error.response.status === 401) {
       alert('인증이 만료되었습니다. 다시 로그인해 주세요.');
       return;
     }
-    
     if (errorCode === 'E21' && error.response.data.data) {
       const fields = error.response.data.data;
       const msg = Object.entries(fields).map(([field, text]) => `${field}: ${text}`).join('\n');
@@ -103,303 +44,343 @@ const handleError = (error) => {
   }
   alert('요청 중 오류가 발생했습니다: ' + (error.response?.data?.data || error.response?.data?.message));
 };
+
+// 1. 일반 Mock 주문 (수량/시나리오 직접 지정)
+const createBaseMockData = async () => {
+  try {
+    await axios.post('/api/mock-data/orders', {
+      scenario: generalScenario.value,
+      count: generalCnt.value
+    });
+    const msg = `${generalScenario.value} 시나리오 주문 ${generalCnt.value}건이 생성되었습니다.`;
+    addLog(msg);
+    alert(msg);
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// 2. 단일 기능용 공통 호출 함수 (특정 시나리오 1건 생성)
+const createScenario = async (scenarioType, title) => {
+  try {
+    await axios.post('/api/mock-data/orders', { scenario: scenarioType, count: 1 });
+    const msg = `${title} 주문 1건이 생성되었습니다.`;
+    addLog(msg);
+    alert(msg);
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// 3. 지연 테스트 전용
+const createDelayOrder = async () => {
+  try {
+    await axios.post('/api/mock-data/orders', { scenario: 'DELAY_TEST', count: delayCnt.value });
+    const msg = `조리 지연 테스트 주문 ${delayCnt.value}건이 생성되었습니다.`;
+    addLog(msg);
+    alert(msg);
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// 4. 발표 피크타임 세트 (여러 종류 일괄 생성)
+const createPeakMock = async () => {
+  try {
+    await axios.post('/api/mock-data/orders/peak'); // 백엔드에 전용 API가 있다고 가정 (없다면 개별 호출 필요)
+    const msg = `발표용 피크타임 위험 주문 세트가 일괄 생성되었습니다.`;
+    addLog(msg);
+    alert(msg);
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// 5. Mock 주문 일괄 삭제
+const deleteMockOrders = async () => {
+  if (!confirm('정말 로그인한 매장의 모든 Mock 주문을 삭제하시겠습니까?')) return;
+  try {
+    await axios.delete('/api/mock-data/orders');
+    const msg = `매장의 모든 Mock 주문 데이터가 삭제되었습니다.`;
+    addLog(msg);
+    alert(msg);
+  } catch (error) {
+    handleError(error);
+  }
+};
 </script>
 
 <template>
-<div class="mock-wrapper">
+  <div class="mock-wrapper">
 
-  <header class="page-header">
-    <span class="category-text">MOCK DATA API</span>
-    <h1>Mock 데이터 생성 패널</h1>
-    <p class="header-desc">시연 및 테스트를 위한 가상의 주문 데이터를 생성하고 초기화합니다.</p>
-  </header>
-
-  <main class="grid-12">
-    <section class="card col-3">
-      <div class="card-header">
-        <h2>기본 데이터</h2>
-        <p>기본 샘플 데이터를 생성합니다.</p>
+    <header class="page-header">
+      <div class="header-content">
+        <span class="category-text">MOCK DATA API</span>
+        <h1>Mock 데이터 생성 패널</h1>
       </div>
+      <p class="header-desc">시연 및 테스트를 위한 가상의 주문 데이터를 생성하고 초기화합니다.</p>
+    </header>
+
+    <main class="mock-grid">
       
-      <div class="card-body empty-body">
+      <section class="mock-card">
+        <div class="card-header">
+          <h2>일반 Mock 주문</h2>
+          <p>기본 주문을 생성합니다.</p>
         </div>
-
-      <div class="card-footer">
-        <MyButton
-          class="card-button"
-          :color="'blue'"
-          :size="'big'"
-          :content="'Mock 기본 데이터 생성'"
-          @click="createBaseMockData"
-        /> 
-      </div>
-    </section>
-
-    <section class="card col-3">
-      <div class="card-header">
-        <h2>일반 Mock 주문</h2>
-        <p>시나리오와 수량을 지정하여 생성합니다.</p>
-      </div>
-
-      <div class="card-body">
-        <div class="input-group">
-          <label>수량 설정</label>
-          <input v-model="generalCnt" type="number" class="input-field" min="1" />
-        </div>
-
-        <div class="input-group">
-          <label>시나리오 선택</label>
-          <select v-model="generalScenario" class="input-field select-field">
-            <option value="MIXED">MIXED (혼합)</option>
-            <option value="GROUP">GROUP (단체)</option>
-            <option value="PREMIUM">PREMIUM (프리미엄)</option>
-            <option value="DELAY_TEST">DELAY (지연 테스트)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="card-footer">
-        <MyButton
-          class="card-button"
-          :color="'blue'"
-          :size="'big'"
-          :content="'Mock 주문 데이터 생성'"
-          @click="createBaseMockData"
-        /> 
-      </div>
-    </section>
-
-    <section class="card col-3">
-      <div class="card-header">
-        <h2>발표 시연용 주문</h2>
-        <p>랜덤 없이 특정 위험 주문을 즉시 생성합니다.</p>
-      </div>
-      
-      <div class="card-body">
-        <div class="button-stack">
-          <MyButton
-            class="card-button"
-            :color="'black'"
-            :size="'big'"
-            :content="'단체 주문 1건 생성'"
-            @click="createScenario('GROUP')"
-          /> 
-          <MyButton
-            class="card-button"
-            :color="'gray'"
-            :size="'big'"
-            :content="'프리미엄 주문 1건 생성'"
-            @click="createScenario('PREMIUM')"
-          /> 
-        </div>
-        
-        <div class="cnt-group">
-          <label>지연 테스트 수량</label>
-          <div class="counter-control">
-            <button class="step-btn" @click="decreaseDelayOrder" aria-label="감소">-</button>
-            <input
-              v-model="delayCnt"
-              type="number"
-              min="1"
-              max="50"
-              readonly
-              class="input-field counter-input"
-            />
-            <button class="step-btn" @click="increaseDelayOrder" aria-label="증가">+</button>
+        <div class="card-body">
+          <div class="input-group">
+            <label>생성 내용</label>
+            <input type="text" class="input-field readonly-input" value="일반 주문 1건" readonly />
           </div>
         </div>
-      </div>
+        <div class="card-footer">
+          <button type="button" class="primary-button full-width-btn" @click="createBaseMockData">일반 주문 생성</button>
+        </div>
+      </section>
 
-      <div class="card-footer">
-        <MyButton
-          class="card-button"
-          :color="'blue'"
-          :size="'big'"
-          :content="'지연 테스트 주문 생성'"
-          @click="createDelayOrder"
-        /> 
-      </div>
-    </section>
-    
-    <section class="card col-3">
-      <div class="card-header">
-        <h2 class="text-danger">Mock 주문 초기화</h2>
-        <p>로그인한 매장의 모든 주문을 삭제합니다.</p>
-      </div>
-      
-      <div class="card-body empty-body">
-         </div>
+      <section class="mock-card">
+        <div class="card-header">
+          <h2>요구사항 위험 주문</h2>
+          <p>분쟁 가능 요청을 포함합니다.</p>
+        </div>
+        <div class="card-body">
+          <div class="input-group">
+            <label>시나리오</label>
+            <select v-model="generalScenario" class="input-field select-field">
+              <option value="MIXED">분쟁 가능 + 과도 요청</option>
+              <option value="GROUP">단체 주문 (과도 요청)</option>
+              <option value="PREMIUM">프리미엄 세트 (분쟁)</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button type="button" class="primary-button full-width-btn" @click="createScenario(generalScenario, '요구사항 위험')">요구사항 주문 생성</button>
+        </div>
+      </section>
 
-      <div class="card-footer">
-        <MyButton
-          class="card-button"
-          :color="'red'"
-          :size="'big'"
-          :content="'Mock 주문 일괄 삭제'"
-          @click="deleteMockOrders"
-        /> 
-      </div>
-    </section>
-  </main>
+      <section class="mock-card">
+        <div class="card-header">
+          <h2>알러지 주의 주문</h2>
+          <p>안전 확인 요청을 포함합니다.</p>
+        </div>
+        <div class="card-body empty-body"></div>
+        <div class="card-footer">
+          <button type="button" class="primary-button full-width-btn" @click="createScenario('ALLERGY', '알러지 주의')">알러지 주문 생성</button>
+        </div>
+      </section>
 
-</div>
+      <section class="mock-card">
+        <div class="card-header">
+          <h2>지연 테스트 주문</h2>
+          <p>조리중 주의 상태로 생성합니다.</p>
+        </div>
+        <div class="card-body empty-body"></div>
+        <div class="card-footer">
+          <button type="button" class="primary-button full-width-btn" @click="createDelayOrder">지연 테스트 생성</button>
+        </div>
+      </section>
+
+      <section class="mock-card">
+        <div class="card-header">
+          <h2>손실 위험 주문</h2>
+          <p>예상 순수익 0원 이하 주문입니다.</p>
+        </div>
+        <div class="card-body empty-body"></div>
+        <div class="card-footer">
+          <button type="button" class="primary-button full-width-btn" @click="createScenario('LOSS', '손실 위험')">손실 주문 생성</button>
+        </div>
+      </section>
+
+      <section class="mock-card">
+        <div class="card-header">
+          <h2>발표 피크타임 세트</h2>
+          <p>여러 위험 주문을 한 번에 생성합니다.</p>
+        </div>
+        <div class="card-body empty-body"></div>
+        <div class="card-footer">
+          <button type="button" class="primary-button full-width-btn" @click="createPeakMock">피크타임 세트 생성</button>
+        </div>
+      </section>
+
+      <section class="mock-card">
+        <div class="card-header">
+          <h2 class="text-danger">Mock 주문 초기화</h2>
+          <p>현재 주문을 초기화합니다.</p>
+        </div>
+        <div class="card-body empty-body"></div>
+        <div class="card-footer">
+          <button type="button" class="sub-button danger-outline full-width-btn" @click="deleteMockOrders">Mock 주문 일괄 삭제</button>
+        </div>
+      </section>
+
+      <section class="mock-card">
+        <div class="card-header">
+          <h2>생성 로그</h2>
+          <p>최근 실행한 테스트 기능입니다.</p>
+        </div>
+        <div class="card-body log-body">
+          <div class="log-list">
+            <div v-for="(log, index) in activeMockLog" :key="index" class="log-item">{{ log }}</div>
+            <div v-if="activeMockLog.length === 0" class="log-item empty-log">아직 생성 로그가 없습니다.</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
 </template>
 
 <style scoped>
-/* ========================================
-Design System Variables
-======================================== */
+/* ============================================================
+   디자인 시스템 변수 & 레이아웃 (Readability Pass 적용)
+   ============================================================ */
 .mock-wrapper {
-  --primary: #87CEEB;
-  --strong: #2784B8;
-  --soft: #EAF8FD;
-  --primary-text: #164E68;
-  
-  --danger: #DC2626;
-  --danger-bg: #FEF2F2;
-
   background-color: #f4f6fc;
-  min-height: calc(100vh - 60px); 
-  padding: 30px;
-  font-family: 'Sejong hospital Light', 'Pretendard', sans-serif;
-  color: var(--primary-text);
+  min-height: calc(100vh - 78px);
+  padding: 34px 40px;
+  font-family: 'Pretendard', sans-serif;
+  color: #164E68;
   box-sizing: border-box;
 }
 
-/* ==========================================
-Page Header
-=========================================== */
+/* ============================================================
+   Page Header
+   ============================================================ */
 .page-header {
-  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .category-text {
-  color: var(--strong);
-  font-size: 13px;
+  color: #2784B8;
+  font-size: 15px;
   font-weight: 800;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-  display: block;
+  letter-spacing: 0.06em;
 }
 
 .page-header h1 {
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 800;
-  margin-bottom: 8px;
+  margin: 0;
   color: #111827;
 }
 
 .header-desc {
-  color: #6b7280;
-  font-size: 15px;
+  color: #64748b;
+  font-size: 16px;
   margin: 0;
 }
 
-/* ==========================================
-Grid Layout
-=========================================== */
-.grid-12 {
+/* ============================================================
+   Mock Grid (2행 4열 8개 카드)
+   ============================================================ */
+.mock-grid {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px;
-  align-items: stretch; /* 카드 높이를 동일하게 맞춤 */
+  align-items: stretch;
 }
 
-.col-3 {
-  grid-column: span 3;
-}
-
-/* ==========================================
-Card Styles
-=========================================== */
-.card {
+/* ============================================================
+   Mock Card Styles
+   ============================================================ */
+.mock-card {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
   transition: transform 0.2s, box-shadow 0.2s;
   overflow: hidden;
+  min-height: 280px; /* 카드들의 최소 높이를 맞춰 균형 유지 */
 }
 
-.card:hover {
+.mock-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
 }
 
 .card-header {
-  padding: 28px 24px 16px;
+  padding: 30px 28px 16px;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .card-header h2 {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 800;
-  color: var(--primary-text);
+  color: #111827;
   margin: 0 0 8px 0;
 }
 
 .card-header p {
-  font-size: 13px;
+  font-size: 15px;
   color: #64748b;
   margin: 0;
   line-height: 1.4;
 }
 
-.text-danger {
-  color: var(--danger) !important;
-}
+.text-danger { color: #dc2626 !important; }
 
-/* ==========================================
-Card Body & Inputs
-=========================================== */
+/* ============================================================
+   Card Body & Inputs
+   ============================================================ */
 .card-body {
-  padding: 24px;
-  flex: 1; /* 남은 높이를 채워서 푸터(버튼)를 맨 아래로 밀어냄 */
+  padding: 24px 28px;
+  flex: 1; 
   display: flex;
   flex-direction: column;
+  justify-content: flex-end; /* 입력 요소들을 아래쪽으로 밀착 */
   gap: 20px;
 }
 
 .empty-body {
-  min-height: 120px; /* 기본/초기화 카드 영역 확보용 */
+  padding: 0; /* 내용이 없는 카드는 여백 제거하여 버튼만 보이게 설정 */
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
-.input-group label, .cnt-group label {
-  font-size: 14px;
-  font-weight: 700;
+.input-group label {
+  font-size: 15px;
+  font-weight: 800;
   color: #334155;
 }
 
 .input-field {
   width: 100%;
-  padding: 12px 16px;
-  background-color: #f8fafc;
+  padding: 14px 16px;
+  background-color: #ffffff;
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 15px;
-  font-family: inherit;
-  color: #0f172a;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
   outline: none;
   transition: all 0.2s ease;
   box-sizing: border-box;
 }
 
-.input-field:hover {
-  border-color: #94a3b8;
+.readonly-input {
+  background-color: #f8fafc;
+  color: #475569;
 }
 
-.input-field:focus {
-  background-color: #ffffff;
-  border-color: var(--strong);
-  box-shadow: 0 0 0 3px var(--soft);
+.input-field:focus:not(.readonly-input) {
+  border-color: #2784B8;
+  box-shadow: 0 0 0 3px rgba(39, 132, 184, 0.15);
 }
 
 .select-field {
@@ -407,74 +388,117 @@ Card Body & Inputs
   appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px;
+  background-position: right 14px center;
+  background-size: 18px;
   padding-right: 40px;
 }
 
-/* ==========================================
-발표 시연용 (버튼 그룹 & 카운터)
-=========================================== */
-.button-stack {
+/* ============================================================
+   생성 로그 영역 (8번째 카드 전용)
+   ============================================================ */
+.log-body {
+  justify-content: flex-start; /* 로그는 위에서부터 채움 */
+  padding: 20px 28px 28px;
+  overflow-y: auto;
+}
+
+.log-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding-bottom: 20px;
-  border-bottom: 1px dashed #e2e8f0;
 }
 
-.cnt-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 4px;
-}
-
-.counter-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.counter-input {
-  text-align: center;
+.log-item {
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 700;
-  font-size: 16px;
-  padding: 12px 0;
+  color: #334155;
+  line-height: 1.5;
 }
 
-.step-btn {
-  width: 44px;
-  height: 44px;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 20px;
-  font-weight: 600;
-  color: #475569;
+.empty-log {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  text-align: left;
+  padding: 10px 0;
+}
+
+/* ============================================================
+   Card Footer & Buttons
+   ============================================================ */
+.card-footer {
+  padding: 0 28px 28px;
   display: flex;
+  justify-content: center;
+}
+
+.full-width-btn {
+  width: 100%;
+}
+
+.primary-button,
+.sub-button {
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 50px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 900;
   transition: all 0.2s;
 }
 
-.step-btn:hover {
-  background: #e2e8f0;
-  color: var(--strong);
-  border-color: #94a3b8;
+.primary-button {
+  border: 0;
+  color: #ffffff;
+  background-color: #3b82f6;
 }
 
-/* ==========================================
-Card Footer (버튼 영역)
-=========================================== */
-.card-footer {
-  padding: 0 24px 24px;
-  display: flex;
-  justify-content: center;
+.primary-button:hover {
+  background-color: #2563eb;
 }
 
-.card-button {
-  width: 100%; /* 버튼이 카드 가로 너비에 꽉 차도록 설정 */
+.sub-button {
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  background-color: #ffffff;
+}
+
+.sub-button:hover {
+  background-color: #fef2f2;
+}
+
+.danger-outline {
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.danger-outline:hover {
+  background-color: #fef2f2;
+}
+
+/* ============================================================
+   반응형 처리
+   ============================================================ */
+@media (max-width: 1400px) {
+  .mock-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1100px) {
+  .mock-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+
+@media (max-width: 760px) {
+  .mock-wrapper { padding: 20px; }
+  .mock-grid { grid-template-columns: 1fr; }
+  .header-content { flex-direction: column; align-items: flex-start; gap: 6px; }
 }
 </style>
