@@ -10,369 +10,372 @@ const goToLogin = () => {
   router.push('/login');
 };
 
-// 회원가입 페이지로 이동
-const goToRegistration = () => {
-  router.push('/register');
-};
-
+// 대시보드 페이지로 이동
 const goToDashboard = () => {
   router.push('/dashboard');
-};
-const goTologout = async () => {
-  await authStore.logout();
-  router.push('/');
 };
 </script>
 
 <template>
   <div class="landing-wrapper">
     
-      <!-- 이 영역은 필요에 따라 추가적인 콘텐츠를 넣을 수 있습니다. -->
-    <nav class="landing-nav">
-      <div class="logo">
-        <img src="/logo.png" class="main-logo">
-      </div>
-      <div class="nav-actions">
-        <template v-if="authStore.isLoggedIn">
-          <button class="btn btn-ghost" @click="goTologout">로그아웃</button>
-          <button class="btn btn-primary" @click="goToDashboard">대시보드</button>
-        </template>
-        <template v-else>
-          <button class="btn btn-ghost" @click="goToLogin">로그인</button>
-          <button class="btn btn-primary" @click="goToRegistration">점포 등록하기</button>
-        </template>
-      </div>
-    </nav>
-    
-
     <header class="hero-section">
-      <div class="hero-content">
-        <span class="hero-badge">✨ B2B 배달 정산 솔루션</span>
-        <h1 class="hero-title">우리 매장 배달 운영의<br/><span class="text-highlight">모든 것을 스마트하게</span></h1>
-        <p class="hero-subtitle">
-          수수료 부담은 줄이고, 마진과 수익은 투명하게 관리하세요.<br/>
-          데이터 기반의 의사결정으로 배달 매출을 극대화할 수 있습니다.
-        </p>
-        <template v-if="authStore.isLoggedIn">
-        <button class="btn btn-lg btn-primary shadow-glow" @click="goToDashboard">
-          지금 바로 시작하기
-          </button>
-          </template>
-          <template v-else>
-        <button class="btn btn-lg btn-primary shadow-glow" @click="goToLogin">
-          지금 바로 시작하기
-          </button>
-          </template>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-right">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-            <polyline points="12 5 19 12 12 19"></polyline>
-          </svg>
+      <div class="hero-container">
         
+        <div class="hero-text-area">
+          <h1 class="hero-title">
+            매장 배달 운영의 모든 것을<br/>
+            통합운영대시보드에서
+          </h1>
+          <p class="hero-subtitle">
+            배프(BAEF)에 가입한 후 즉시 모든 기능을 이용할 수 있습니다.
+          </p>
+          
+          <div class="hero-actions">
+            <template v-if="authStore.isLoggedIn">
+              <button class="btn-start" @click="goToDashboard">대시보드 시작하기</button>
+            </template>
+            <template v-else>
+              <button class="btn-start" @click="goToLogin">셀프서비스 시작하기</button>
+            </template>
+          </div>
+        </div>
+
+        <div class="hero-visual-area">
+          
+          <div class="mockup-web">
+            <div class="web-sidebar">
+              <div class="skeleton-icon"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+              <div class="skeleton-line"></div>
+            </div>
+            <div class="web-body">
+              <div class="web-header">
+                <div class="skeleton-box"></div>
+              </div>
+              <div class="web-content">
+                <div class="chart-card">
+                  <div class="skeleton-title"></div>
+                  <div class="bar-chart">
+                    <div class="bar h-40"></div>
+                    <div class="bar h-70"></div>
+                    <div class="bar h-50"></div>
+                    <div class="bar h-90"></div>
+                    <div class="bar h-60"></div>
+                    <div class="bar h-80"></div>
+                  </div>
+                </div>
+                <div class="bottom-cards">
+                  <div class="mini-card">
+                    <div class="circle-chart"></div>
+                  </div>
+                  <div class="mini-card">
+                    <div class="circle-chart secondary"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mockup-mobile">
+            <div class="mobile-notch"></div>
+            <div class="mobile-screen">
+              <div class="mobile-header">
+                <div class="hamburger"></div>
+                <div class="mobile-title">배프셀프서비스</div>
+              </div>
+              <div class="mobile-card highlight">
+                <div class="skeleton-text sm">입금 예정 금액</div>
+                <div class="skeleton-text lg blue">249,180원</div>
+              </div>
+              <div class="mobile-card flex-row">
+                <div>
+                  <div class="skeleton-text sm">어제 주문금액</div>
+                  <div class="skeleton-text md">1,520,180원</div>
+                </div>
+                <div>
+                  <div class="skeleton-text sm">어제 주문수</div>
+                  <div class="skeleton-text md">21건</div>
+                </div>
+              </div>
+              <div class="mobile-card toggle-card">
+                <div class="skeleton-text md">영업임시중지</div>
+                <div class="toggle-btn"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </header>
 
-    <section class="features-section">
-      <div class="feature-card">
-        <div class="icon-wrapper primary-light">
-          <span class="icon">📊</span>
-        </div>
-        <h3>스마트한 마진 분석</h3>
-        <p>메뉴별 원가와 포장비를 계산해<br/>가장 효율적인 최적의 마진율을 찾아드립니다.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon-wrapper warning-light">
-          <span class="icon">⏱️</span>
-        </div>
-        <h3>지연 위험 알림</h3>
-        <p>주방 처리량을 초과하는 주문을<br/>사전에 감지하고 위급 상황을 경고합니다.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon-wrapper success-light">
-          <span class="icon">💰</span>
-        </div>
-        <h3>정확한 정산 내역</h3>
-        <p>플랫폼별 수수료와 배달비를<br/>정확히 공제한 진짜 순수익을 확인하세요.</p>
-      </div>
-    </section>
   </div>
 </template>
 
 <style scoped>
 /* ========================================
-Design System Variables
-======================================== */
+   Design System Variables
+   ======================================== */
 .landing-wrapper {
-  --bg-main: #f8fafc;
-  --bg-card: #ffffff;
-  
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  
-  --warning-light: #fffbeb;
-  --success-light: #ecfdf5;
-  
-  --text-main: #0f172a;
-  --text-sub: #475569;
-  --text-muted: #94a3b8;
-  
-  --border-color: #e2e8f0;
-  
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.3);
+  --bg-main: #f4f5f7; 
+  --text-main: #111111;
+  --text-sub: #666666;
 
   width: 100%;
-  min-height: 100vh; /* 5000px 대신 콘텐츠에 맞춰 늘어나도록 수정 */
-  background-color: var(--bg-card);
+  min-height: 100vh;
+  background-color: var(--bg-main);
   display: flex;
   flex-direction: column;
   font-family: 'Pretendard', -apple-system, sans-serif;
   color: var(--text-main);
-  -webkit-font-smoothing: antialiased;
 }
 
 /* ========================================
-상단 네비게이션 바
-======================================== */
-/* 1. 네비게이션 바 두께 줄이기 */
-.landing-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  
-  /* 1. 상하 패딩을 0으로 없애고 좌우 40px만 유지합니다 */
-  padding: 0 40px; 
-  
-  /* 2. 네비게이션 바 높이를 확대된 로고 크기(40px * 2배 = 80px)에 딱 맞춥니다 */
-  height: 80px; 
-  
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
-}
-
-.logo {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--text-main);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  letter-spacing: -0.5px;
-}
-
-/* 2. 로고 레이아웃 분리 및 확대 적용 */
-.main-logo {
-  /* 네비게이션 바를 밀어내지 않도록 실제 차지하는 공간(높이)은 작게 고정합니다 */
-  height: 40px; 
-  width: auto;  
-  object-fit: contain; 
-  cursor: pointer;
-  
-  /* [핵심] 시각적으로만 크기를 n배 확대합니다. (필요에 따라 1.5 ~ 2.5 사이로 조절하세요) */
-  transform: scale(2.0); 
-  
-  /* 확대될 때 이미지가 영역 밖으로 밀려나지 않도록 기준점을 왼쪽 중앙으로 고정합니다 */
-  transform-origin: left center; 
-}
-
-/* 버튼 공통 스타일 */
-.nav-actions { display: flex; gap: 12px; }
-
-.btn {
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--text-sub);
-  padding: 10px 16px;
-}
-
-.btn-ghost:hover {
-  background: var(--bg-main);
-  color: var(--text-main);
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-  padding: 10px 20px;
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-primary:hover {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
-}
-
-/* ========================================
-메인 히어로 영역 (Hero Section)
-======================================== */
+   메인 히어로 영역 (화면 중앙 정렬)
+   ======================================== */
 .hero-section {
-  /* 부드러운 그라데이션 배경으로 깊이감 연출 */
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
-  padding: 100px 20px 80px;
+  flex: 1;
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
+  overflow: hidden; 
 }
 
-/* 히어로 섹션 배경 장식 요소 */
-.hero-section::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 800px;
-  height: 800px;
-  background: radial-gradient(circle, rgba(37,99,235,0.05) 0%, rgba(255,255,255,0) 70%);
-  border-radius: 50%;
-  pointer-events: none;
+.hero-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.hero-content {
-  position: relative;
+/* --- 좌측 텍스트 영역 --- */
+.hero-text-area {
+  flex: 1;
+  max-width: 500px;
+  text-align: left;
   z-index: 10;
-  max-width: 800px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.hero-badge {
-  background: var(--primary-light);
-  color: var(--primary);
-  padding: 6px 16px;
-  border-radius: 30px;
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 24px;
-  border: 1px solid rgba(37, 99, 235, 0.1);
 }
 
 .hero-title {
-  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-size: 46px; 
   font-weight: 800;
-  letter-spacing: -1px;
-  margin-bottom: 24px;
-  line-height: 1.2;
+  letter-spacing: -1.5px;
+  line-height: 1.3;
   color: var(--text-main);
-}
-
-.text-highlight {
-  color: var(--primary);
+  margin-bottom: 24px;
 }
 
 .hero-subtitle {
-  font-size: clamp(1.1rem, 2vw, 1.25rem);
+  font-size: 17px;
   color: var(--text-sub);
-  margin-bottom: 48px;
+  margin-bottom: 40px;
   line-height: 1.6;
 }
 
-/* 메인 CTA 버튼 */
-.btn-lg {
+/* 메인 시작 버튼 */
+.btn-start {
+  background: #3b82f6; 
+  color: white;
   font-size: 18px;
-  padding: 16px 36px;
-  border-radius: 50px;
-  gap: 12px;
+  font-weight: 700;
+  padding: 18px 36px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+  transition: all 0.2s ease;
 }
 
-.shadow-glow {
-  box-shadow: var(--shadow-glow);
-}
-
-.shadow-glow:hover {
-  box-shadow: 0 0 25px rgba(37, 99, 235, 0.4);
+.btn-start:hover {
+  background: #2563eb;
   transform: translateY(-2px);
 }
 
-.icon-right {
-  transition: transform 0.2s ease;
+/* --- 우측 목업 시각화 영역 --- */
+.hero-visual-area {
+  flex: 1.2;
+  position: relative;
+  height: 600px;
 }
 
-.btn-lg:hover .icon-right {
-  transform: translateX(4px);
+/* 1. 웹 대시보드 목업 (배경) */
+.mockup-web {
+  position: absolute;
+  top: 40px;
+  right: -100px; 
+  width: 800px;
+  height: 500px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  display: flex;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
 }
 
-/* ========================================
-하단 3단 카드 영역
-======================================== */
-.features-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 32px;
-  padding: 40px 24px 100px;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
+.web-sidebar {
+  width: 80px;
+  background: #f8fafc;
+  border-right: 1px solid #e5e7eb;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
-.feature-card {
-  text-align: center;
-  padding: 48px 32px;
-  background: var(--bg-card);
-  border-radius: 20px;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-color);
-  transition: all 0.3s ease;
+.web-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f4f5f7;
 }
 
-.feature-card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
-  border-color: rgba(37, 99, 235, 0.2);
+.web-header {
+  height: 60px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
 }
 
-/* 아이콘을 둥근 배경 안에 넣어 더 정돈된 느낌을 줌 */
-.icon-wrapper {
-  width: 72px;
-  height: 72px;
-  border-radius: 24px;
+.web-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.chart-card {
+  background: #ffffff;
+  height: 200px;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.bottom-cards {
+  display: flex;
+  gap: 20px;
+}
+
+.mini-card {
+  flex: 1;
+  background: #ffffff;
+  height: 160px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 24px;
 }
 
-.icon-wrapper.primary-light { background: var(--primary-light); }
-.icon-wrapper.warning-light { background: var(--warning-light); }
-.icon-wrapper.success-light { background: var(--success-light); }
+/* 웹 CSS 디테일 (막대그래프 등) */
+.bar-chart { display: flex; gap: 12px; align-items: flex-end; height: 120px; margin-top: 20px; padding-left: 20px; }
+.bar { width: 30px; background: #3b82f6; border-radius: 4px 4px 0 0; }
+.bar.h-40 { height: 40%; } .bar.h-70 { height: 70%; } .bar.h-50 { height: 50%; }
+.bar.h-90 { height: 90%; } .bar.h-60 { height: 60%; } .bar.h-80 { height: 80%; }
+.circle-chart { width: 80px; height: 80px; border-radius: 50%; border: 16px solid #3b82f6; border-top-color: #eff6ff; }
+.circle-chart.secondary { border-color: #10b981; border-top-color: #ecfdf5; }
 
-.icon {
-  font-size: 32px;
+/* 2. 스마트폰 목업 (웹 목업 위에 겹침) */
+.mockup-mobile {
+  position: absolute;
+  top: 0;
+  left: 20px;
+  width: 280px;
+  height: 580px;
+  background: #ffffff;
+  border: 14px solid #1a1a1a; 
+  border-radius: 40px;
+  box-shadow: -15px 20px 40px rgba(0, 0, 0, 0.15); 
+  z-index: 20;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.feature-card h3 {
-  color: var(--text-main);
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  letter-spacing: -0.5px;
+.mobile-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 24px;
+  background: #1a1a1a;
+  border-radius: 0 0 16px 16px;
+  z-index: 30;
 }
 
-.feature-card p {
-  color: var(--text-sub);
-  line-height: 1.6;
-  font-size: 15px;
+.mobile-screen {
+  flex: 1;
+  background: #f8fafc;
+  padding: 40px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 스마트폰 내부 UI CSS */
+.mobile-header { display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 10px; }
+.hamburger { position: absolute; left: 0; width: 20px; height: 2px; background: #111; box-shadow: 0 6px 0 #111, 0 -6px 0 #111; }
+.mobile-title { font-weight: 800; font-size: 16px; }
+
+.mobile-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.mobile-card.highlight { border: 1px solid #eff6ff; }
+.mobile-card.flex-row { display: flex; justify-content: space-between; }
+.mobile-card.toggle-card { display: flex; justify-content: space-between; align-items: center; }
+
+.skeleton-text { border-radius: 4px; font-weight: 700; margin-bottom: 4px; }
+.skeleton-text.sm { font-size: 12px; color: #64748b; }
+.skeleton-text.md { font-size: 15px; color: #111827; }
+.skeleton-text.lg { font-size: 20px; }
+.skeleton-text.lg.blue { color: #3b82f6; }
+.toggle-btn { width: 44px; height: 24px; background: #e2e8f0; border-radius: 12px; position: relative; }
+.toggle-btn::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+/* 스켈레톤 공통 */
+.skeleton-icon { width: 24px; height: 24px; background: #cbd5e1; border-radius: 4px; }
+.skeleton-line { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; }
+.skeleton-line.short { width: 60%; }
+.skeleton-box { width: 200px; height: 16px; background: #e2e8f0; border-radius: 4px; }
+.skeleton-title { width: 120px; height: 16px; background: #e2e8f0; border-radius: 4px; margin-bottom: 20px;}
+
+/* ========================================
+   반응형 (모바일) 처리
+   ======================================== */
+@media (max-width: 992px) {
+  .hero-section {
+    align-items: flex-start;
+    padding-top: 60px;
+  }
+  .hero-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  .hero-text-area {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+  .mockup-web {
+    position: relative;
+    right: auto;
+    width: 100%;
+    max-width: 600px;
+  }
+  .mockup-mobile {
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 </style>
