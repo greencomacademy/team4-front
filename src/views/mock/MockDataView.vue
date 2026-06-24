@@ -7,7 +7,7 @@ import MyButton from '../../components/button/MyButton.vue';
 // 화면 상태 관리
 // ----------------------
 
-const axios = myAxios();
+const axios = myAxios;
 
 // 발표 시연용 카드 지연 테스트 수량 저장 변수
 const delayCnt = ref(1);
@@ -40,33 +40,66 @@ const decreaseDelayOrder = () => {
 // 백엔드 연동 axios
 // ----------------------
 
-// 일반 Mock 주문 데이터: 화면에서 선택한 문자열과 입력한 수량 전송
+// 기본 Mock 데이터 생성
 const createBaseMockData = async () => {
   try {
+    // 💡 백엔드가 기대하는 기본 데이터를 객체 형태로 실어서 보냅니다.
     await axios.post('/api/mock-data/orders', {
-      scenario: generalScenario.value, // select 박스 Enum 값
-      count: generalCnt.value // input 창 입력된 수량
-    })
+      scenario: 'MIXED',
+      count: 1
+    });
+    alert('기본 Mock 데이터가 성공적으로 생성되었습니다.');
+  } catch (error) {
+    handleError(error);
+  }
+};
+// 일반 Mock 주문 생성
+const createMockOrders = async () => {
+  try {
+    await axios.post('/api/mock-data/orders', {
+      scenario: generalScenario.value,
+      count: generalCnt.value
+    });
+
     alert(`${generalScenario.value} 시나리오 주문 ${generalCnt.value}개가 성공적으로 생성되었습니다.`);
   } catch (error) {
     handleError(error);
   }
 };
 
-// 발표 시연용 주문 1건 생성(단체/프리미엄): 버튼 클릭 시 GROUP/PREMIUM 1개 생성
-const createScenario = async (scenarioType) => {
+// 발표용 GROUP 주문 생성
+//  수정 코드
+const createGroupOrder = async () => {
   try {
-    await axios.post('/api/mock-data/orders', { scenario: scenarioType, count: 1 });
-    alert(`${scenarioType} 주문이 성공적으로 생성되었습니다.`);
+    await axios.post('/api/mock-data/orders', {
+      scenario: 'GROUP',
+      count: 1
+    });
+    alert('단체 주문이 성공적으로 생성되었습니다.');
   } catch (error) {
     handleError(error);
   }
 };
 
-// 발표 시연용 지연 테스트 주문 생성: DELAY_TEST
+const createPremiumOrder = async () => {
+  try {
+    await axios.post('/api/mock-data/orders', {
+      scenario: 'PREMIUM',
+      count: 1
+    });
+    alert('프리미엄 주문이 성공적으로 생성되었습니다.');
+  } catch (error) {
+    handleError(error);
+  }
+};
+// 발표용 지연 테스트 주문 생성
 const createDelayOrder = async () => {
   try {
-    await axios.post('/api/mock-data/orders', { scenario: 'DELAY_TEST', count: delayCnt.value });
+    await axios.post('/api/mock-data/orders', {
+      scenario: 'DELAY_TEST',
+      count: delayCnt.value
+    });
+
     alert(`지연 테스트 주문 ${delayCnt.value}개가 성공적으로 생성되었습니다.`);
   } catch (error) {
     handleError(error);
@@ -164,7 +197,7 @@ const handleError = (error) => {
           :color="'blue'"
           :size="'big'"
           :content="'Mock 주문 데이터 생성'"
-          @click="createBaseMockData"
+          @click="createMockOrders"
         /> 
       </div>
     </section>
@@ -182,14 +215,14 @@ const handleError = (error) => {
             :color="'black'"
             :size="'big'"
             :content="'단체 주문 1건 생성'"
-            @click="createScenario('GROUP')"
+            @click="createGroupOrder"
           /> 
           <MyButton
             class="card-button"
             :color="'gray'"
             :size="'big'"
             :content="'프리미엄 주문 1건 생성'"
-            @click="createScenario('PREMIUM')"
+            @click="createPremiumOrder"
           /> 
         </div>
         

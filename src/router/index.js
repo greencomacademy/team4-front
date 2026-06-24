@@ -107,13 +107,13 @@ const routes = [
     component: PlatformsView,
     meta: { isAuthenticated: true },
   },
-  
   {
     path: '/mockdata',
+    name: 'mockdata',
     component: MockDataView,
     meta: { isAuthenticated: true },
   }
-]
+];
 
 const router = createRouter({
   history: createWebHistory(),

@@ -36,6 +36,8 @@ if (isLoading.value) return;
        */
       router.push({ name: 'dashboard' });
       
+      // 로그인 성공시 메인 페이지로 페이지 이동
+      router.push('/dashboard');
     }
   } catch (error) {
       const message = error.response?.data?.data || error.response?.data?.message || '로그인에 실패했습니다.';
