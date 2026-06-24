@@ -8,13 +8,17 @@ const store = useStoreStore();
 
 // 1. 화면에 바인딩 될 입력 폼 상태 (상세주소, 업종, 상태 추가)
 const formData = reactive({
-  name: '',
+  storeName: '',
   phone: '',
+  businessNumber: '',
   address: '',
   detailAddress: '', // 추가: 상세주소
-  category: '한식',    // 추가: 업종 (기본값)
-  status: '운영중',    // 추가: 매장 상태 (기본값)
+  industryType: '한식',    // 추가: 업종 (기본값)
+  businessStatus: 'PENDING',       // 사업자 인증 상태, 표시용
+  operationStatus: 'OPERATING',    // 매장 운영 상태, 수정 가능
   kitchenCapacity: '',
+  openTime: '',    // 추가: 영업 시작 시간
+  closeTime: ''     // 추가: 영업 종료 시간
 });
 
 // 사업자 번호 3칸 전용 상태
@@ -23,6 +27,24 @@ const bizNumParts = reactive({
   part2: '',
   part3: ''
 });
+// 백엔드에서 받은 숫자 10자리 사업자번호를 화면의 3칸 입력값으로 나눠 넣는 함수
+const setBusinessNumberParts = (businessNumber) => {
+  if (!businessNumber) {
+    bizNumParts.part1 = '';
+    bizNumParts.part2 = '';
+    bizNumParts.part3 = '';
+    return;
+  }
+
+  bizNumParts.part1 = businessNumber.slice(0, 3);
+  bizNumParts.part2 = businessNumber.slice(3, 5);
+  bizNumParts.part3 = businessNumber.slice(5, 10);
+};
+
+// 화면의 3칸 사업자번호를 백엔드 전송용 숫자 10자리로 합치는 함수
+const getBusinessNumber = () => {
+  return `${bizNumParts.part1}${bizNumParts.part2}${bizNumParts.part3}`;
+};
 
 // 2. 변경된 항목만 추출하기 위해 원본 데이터를 저장해둘 빈 객체
 let originalData = {};
@@ -37,31 +59,34 @@ onBeforeMount(async () => {
     
     // 서버에 내 매장 정보가 있다면 폼에 미리 채워줍니다.
     if (store.currentData) {
-      formData.name = store.currentData.name || '';
+      formData.storeName = store.currentData.storeName || '';
       formData.phone = store.currentData.phone || '';
+      formData.businessNumber = store.currentData.businessNumber || '';
       formData.address = store.currentData.address || '';
       formData.detailAddress = store.currentData.detailAddress || '';
-      formData.category = store.currentData.category || '한식';
-      formData.status = store.currentData.status || '운영중';
+      formData.industryType = store.currentData.category || '한식';
+      formData.businessStatus = store.currentData.businessStatus || 'PENDING';
+      formData.operationStatus = store.currentData.status || 'OPERATING';
       formData.kitchenCapacity = store.currentData.kitchenCapacity || '';
+      formData.openTime = store.currentData.openTime?.slice(0, 5) || '';
+      formData.closeTime = store.currentData.closeTime?.slice(0, 5)  || '';
 
-      if (store.currentData.businessNumber) {
-        const parts = store.currentData.businessNumber.split('-');
-        bizNumParts.part1 = parts[0] || '';
-        bizNumParts.part2 = parts[1] || '';
-        bizNumParts.part3 = parts[2] || '';
-      }
+      setBusinessNumberParts(store.currentData.businessNumber);
+
 
       // 스냅샷
       originalData = {
-        name: formData.name,
+        storeName: formData.storeName,
         phone: formData.phone,
+        businessNumber: store.currentData.businessNumber || '',
         address: formData.address,
         detailAddress: formData.detailAddress,
-        category: formData.category,
-        status: formData.status,
+        industryType: formData.industryType,
+        operationStatus: formData.operationStatus,
         businessNumber: store.currentData.businessNumber || '',
-        kitchenCapacity: String(formData.kitchenCapacity)
+        kitchenCapacity: String(formData.kitchenCapacity),
+        openTime: formData.openTime,
+        closeTime: formData.closeTime,
       };
     }
   } catch (error) {
@@ -73,20 +98,22 @@ onBeforeMount(async () => {
 
 // 5. 등록 및 수정 버튼 클릭 시 실행될 함수
 const handleSubmit = async () => {
-  const currentBizNum = `${bizNumParts.part1}-${bizNumParts.part2}-${bizNumParts.part3}`;
+  const currentBizNum = getBusinessNumber(); // 화면의 3칸 사업자번호를 합쳐서 가져오기
 
   if (isExistingStore.value) {
     /* [기존 유저] 부분 수정 로직 (PATCH) */
     const changedFields = {};
 
-    if (formData.name !== originalData.name) changedFields.name = formData.name;
+    if (formData.storeName !== originalData.storeName) changedFields.storeName = formData.storeName;
     if (formData.phone !== originalData.phone) changedFields.phone = formData.phone;
     if (formData.address !== originalData.address) changedFields.address = formData.address;
-    if (formData.detailAddress !== originalData.detailAddress) changedFields.detailAddress = formData.detailAddress;
-    if (formData.category !== originalData.category) changedFields.category = formData.category;
-    if (formData.status !== originalData.status) changedFields.status = formData.status;
-    if (String(formData.kitchenCapacity) !== originalData.kitchenCapacity) changedFields.kitchenCapacity = formData.kitchenCapacity;
+    if (formData.detailAddress !== originalData.detailAddress) changedFields.addressDetail = formData.detailAddress;
+    if (formData.industryType !== originalData.industryType) changedFields.industryType = formData.industryType;
+    if (formData.operationStatus !== originalData.operationStatus) changedFields.operationStatus = formData.operationStatus;
+    if (String(formData.kitchenCapacity) !== originalData.kitchenCapacity) changedFields.kitchenCapacity = Number(formData.kitchenCapacity);
     if (currentBizNum !== originalData.businessNumber) changedFields.businessNumber = currentBizNum;
+    if (formData.openTime !== originalData.openTime) changedFields.openTime = formData.openTime;
+    if (formData.closeTime !== originalData.closeTime) changedFields.closeTime = formData.closeTime;
 
     if (Object.keys(changedFields).length === 0) {
       alert('수정된 항목이 없습니다.');
@@ -104,7 +131,18 @@ const handleSubmit = async () => {
 
   } else {
     /* [신규 유저] 신규 등록 로직 (POST) */
-    const payload = { ...formData, businessNumber: currentBizNum };
+    const payload = {
+  storeName: formData.storeName,
+  phone: formData.phone,
+  businessNumber: currentBizNum,
+  address: formData.address,
+  addressDetail: formData.detailAddress,
+  industryType: formData.industryType,
+  operationStatus: formData.operationStatus,
+  kitchenCapacity: Number(formData.kitchenCapacity),
+  openTime: formData.openTime,
+  closeTime: formData.closeTime,
+};
     
     try {
       await store.storeForm(payload);
@@ -150,7 +188,7 @@ const handleCancel = () => {
         
         <div class="input-group">
           <label>매장명 <span>*</span></label>
-          <input name="name" type="text" v-model="formData.name" placeholder="DeliveryInsider Kitchen" required>
+          <input name="storeName" type="text" v-model="formData.storeName" placeholder="DeliveryInsider Kitchen" required>
         </div>
         <div class="input-group">
           <label>대표 전화번호 <span>*</span></label>
@@ -171,7 +209,7 @@ const handleCancel = () => {
         </div>
         <div class="input-group">
           <label>업종</label>
-          <select name="category" v-model="formData.category">
+          <select name="industryType" v-model="formData.industryType">
             <option value="한식">한식</option>
             <option value="중식">중식</option>
             <option value="일식">일식</option>
@@ -196,10 +234,10 @@ const handleCancel = () => {
         </div>
         <div class="input-group">
           <label>매장 상태</label>
-          <select name="status" v-model="formData.status">
-            <option value="운영중">운영중</option>
-            <option value="휴업">휴업</option>
-            <option value="폐업">폐업</option>
+          <select name="operationStatus" v-model="formData.operationStatus">
+            <option value="OPERATING">운영중</option>
+            <option value="TEMP_CLOSED">휴업</option>
+            <option value="CLOSED">폐업</option>
           </select>
         </div>
 
@@ -210,12 +248,12 @@ const handleCancel = () => {
         <br>
         <div class="input-group">
           <label>영업 시작 시간 <span>*</span></label>
-          <input name="openingTime" type="time" v-model="formData.openingTime" required>
+          <input name="openTime" type="time" v-model="formData.openTime" required>
         </div>
 
         <div class="input-group">
           <label>영업 종료 시간 <span>*</span></label>
-          <input name="closingTime" type="time" v-model="formData.closingTime" required>
+          <input name="closingTime" type="time" v-model="formData.closeTime" required>
         </div>
         
         <div class="info-banner full-width">

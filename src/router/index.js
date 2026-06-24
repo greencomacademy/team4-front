@@ -123,25 +123,29 @@ const router = createRouter({
 /*
  * 화면 이동 전에 실행되는 네비게이션 가드
  */
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore();
 
   /*
-   * 현재 백엔드 인증 기능이 완성되지 않았으므로
-   * Vite 개발 서버에서는 인증 검사를 임시로 통과시킨다.
-   *
-   * npm run dev
-   * → import.meta.env.DEV가 true
+   * 로그인이 필요한 화면인데 Access Token이 없다면
+   * Refresh Token 쿠키로 로그인 상태 복구를 먼저 시도한다.
+   * reissue 시도
    */
-  const isDevelopmentMode = import.meta.env.DEV;
+  if (
+    to.meta.isAuthenticated &&
+    !authStore.accessToken
+  ) {
+    const reissueSuccess = await authStore.reissue();
 
-  if (isDevelopmentMode) {
-    return true;
+    if (!reissueSuccess) {
+      return {
+        name: 'login',
+      };
+    }
   }
 
   /*
-   * 로그인이 필요한 화면인데 로그인하지 않았다면
-   * 로그인 화면으로 이동한다.
+   * 복구 후에도 로그인 상태가 아니면 로그인 화면으로 보낸다.
    */
   if (
     to.meta.isAuthenticated &&
@@ -153,9 +157,23 @@ router.beforeEach((to) => {
   }
 
   /*
-   * 이미 로그인한 사용자가 로그인·회원가입 화면에
-   * 접근하면 대시보드로 이동한다.
+   * 로그인한 사용자가 랜딩/로그인/회원가입으로 가려고 하면
+   * Refresh Token으로 복구 후 dashboard로 보낸다.
    */
+  if (
+    to.meta.isGuestOnly &&
+    !authStore.accessToken &&
+    authStore.hasLoginHint
+  ) {
+    const reissueSuccess = await authStore.reissue();
+
+    if (reissueSuccess) {
+      return {
+        name: 'dashboard',
+      };
+    }
+  }
+  // 이미 로그인 상태면 게스트 페이지 접근 차단
   if (
     to.meta.isGuestOnly &&
     authStore.isLoggedIn
