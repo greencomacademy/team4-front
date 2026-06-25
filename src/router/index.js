@@ -4,6 +4,7 @@ import {
 } from 'vue-router';
 
 import { useAuthStore } from '../stores/auth/useAuthStore.js';
+import { useStoreStore } from '../stores/store/useStoreStore.js';
 
 import LandingView from '../views/landing/LandingView.vue';
 import Login from '../views/auth/Login.vue';
@@ -13,9 +14,9 @@ import DashboardView from '../views/dashboard/DashboardView.vue';
 import MenusView from '../views/menu/MenusView.vue';
 import StoreView from '../views/store/StoreView.vue';
 import MockDataView from '../views/mock/MockDataView.vue';
-import OrdersView from '../views/order/OrdersView.vue';
 import AllReportView from '../views/report/AllReportView.vue';
 import ProfileView from '../views/profile/ProfileView.vue'; // 내 정보 뷰 임포트 추가
+import OrdersView from '../views/order/OrdersView.vue';
 
 /*
  * 라우트마다 사용할 meta 정보를 생성한다.
@@ -104,7 +105,7 @@ const routes = [
     path: '/store',
     name: 'store',
     component: StoreView,
-    meta: { isAuthenticated: true, title: '매장 관리' },
+    meta: { isAuthenticated: true, title: '매장 관리', allowWithoutStore: true },
   },
 
   /*
@@ -134,7 +135,7 @@ const routes = [
     path: '/profile',
     name: 'profile',
     component: ProfileView,
-    meta: { isAuthenticated: true, title: '내 정보' },
+    meta: { isAuthenticated: true, title: '내 정보',allowWithoutStore: true },
   }
 ];
 
@@ -206,6 +207,29 @@ router.beforeEach(async (to) => {
       name: 'dashboard',
     };
   }
+  /*
+ * 로그인은 되어 있지만 매장이 없는 경우,
+ * 매장 관리 화면으로 보낸다.
+ *
+ * dashboard / orders / menus / reports / mockdata는
+ * storeId가 있어야 정상 동작한다.
+ */
+if (
+  to.meta.isAuthenticated &&
+  authStore.isLoggedIn &&
+  !to.meta.allowWithoutStore
+) {
+  const storeStore = useStoreStore();
+
+  const myStore = await storeStore.checkMyStore();
+
+  if (!myStore) {
+    alert('매장 등록을 먼저 해야 합니다. 매장 정보를 등록한 뒤 서비스를 이용해주세요.');
+    return {
+      name: 'store',
+    };
+  }
+}
 
   return true;
 });
