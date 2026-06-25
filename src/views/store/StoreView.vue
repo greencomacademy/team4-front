@@ -202,7 +202,7 @@ const handleOperationSubmit = () => {
         <div class="input-group full-width">
           <label>주소 <span>*</span></label>
           <div class="input-with-btn">
-            <input type="text" v-model="formData.address" placeholder="주소를 검색해주세요" required style="background-color: #f9fafb;">
+            <input type="text" v-model="formData.address" placeholder="주소를 검색해주세요">
             <button type="button" class="btn-secondary">주소 검색</button>
           </div>
         </div>
