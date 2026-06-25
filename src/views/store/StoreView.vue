@@ -448,14 +448,7 @@ const handleOperationSubmit = async () => {
           주소 <span>*</span>
           </label>
           <div class="input-with-btn">
-            <input
-              v-model="formData.address"
-              required
-              placeholder="예: 대구광역시 동구 동대구로 475"
-              title="도로명 주소 또는 지번 주소를 입력해주세요."
-              @invalid="setInvalidMessage($event, '매장 주소를 입력해주세요.')"
-              @input="clearInvalidMessage($event)"
-            />
+            <input type="text" v-model="formData.address" placeholder="주소를 검색해주세요">
             <button type="button" class="btn-secondary">주소 검색</button>
           </div>
         </div>
