@@ -14,9 +14,9 @@ import DashboardView from '../views/dashboard/DashboardView.vue';
 import MenusView from '../views/menu/MenusView.vue';
 import StoreView from '../views/store/StoreView.vue';
 import MockDataView from '../views/mock/MockDataView.vue';
-import OrdersView from '../views/order/OrdersView.vue';
 import AllReportView from '../views/report/AllReportView.vue';
 import ProfileView from '../views/profile/ProfileView.vue'; // 내 정보 뷰 임포트 추가
+import OrdersView from '../views/order/OrdersView.vue';
 
 /*
  * 라우트마다 사용할 meta 정보를 생성한다.
