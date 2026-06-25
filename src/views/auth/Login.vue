@@ -2,10 +2,11 @@
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth/useAuthStore.js'; // 실제 경로에 맞게 조정 필요
+import { useStoreStore } from '../../stores/store/useStoreStore.js';
 
 const router = useRouter();
 const authStore = useAuthStore();
-
+const storeStore = useStoreStore();
 // 로그인 관련 상태 관리
 const isLoading = ref(false);
 const showPassword = ref(false);
@@ -32,10 +33,20 @@ const handleSubmit = async () => {
         email: loginForm.email,
         password: loginForm.password
       });
-      
-      // 로그인 성공 시 메인 대시보드로 이동
-      router.push('/dashboard');
+    /*
+    * 로그인 성공 후 매장 등록 여부 확인
+    */
+    const myStore = await storeStore.checkMyStore(true);
+
+    if (myStore) {
+    router.push('/dashboard');
+    return;
     }
+    alert('신규 회원입니다. \n 매장 등록을 먼저 해야 합니다. 매장 정보를 등록한 뒤 서비스를 이용해주세요.');
+    router.push('/store');
+
+    }
+
   } catch (error) {
     const message = error.response?.data?.data || error.response?.data?.message || '로그인에 실패했습니다.';
     alert(message);
