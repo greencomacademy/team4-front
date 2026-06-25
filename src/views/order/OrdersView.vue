@@ -708,7 +708,7 @@ const saveReason = async () => {
 
       <article class="summary-card risk clickable" @click="setOrderFilter('attention', 'REQUEST')">
         <div class="summary-card-head">
-          <span>요구사항 확인</span>
+          <span>요청사항 확인</span>
           <small>ATTENTION</small>
         </div>
         <strong>{{ operationSummary.requestRiskCount }}건</strong>
@@ -781,7 +781,7 @@ const saveReason = async () => {
                 <th>상태</th>
                 <th>메뉴</th>
                 <th>배달주소</th>
-                <th>요구사항</th>
+                <th>요청사항</th>
                 <th>위험</th>
                 <th>액션</th>
               </tr>
@@ -1166,7 +1166,7 @@ const saveReason = async () => {
   justify-content: center;
   min-height: 44px;
   padding: 0 18px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
   transition: all 0.2s;
 }
@@ -1417,7 +1417,7 @@ const saveReason = async () => {
 }
 .platform-badge { color: #334155; background: #ffffff; border: 1px solid #94a3b8; }
 .platform-badge::before { content: ""; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: #64748b; }
-.status-badge.status-waiting { color: #164e68; background-color: #eaf8fd; }
+.status-badge.status-waiting { color: #121213; background-color: #eaf8fd; }
 .status-badge.status-cooking { color: #92400e; background-color: #fffbeb; }
 .status-badge.status-delivering { color: #166534; background-color: #dcfce7; }
 .status-badge.status-completed { color: #334155; background-color: #f1f5f9; }
@@ -1428,7 +1428,7 @@ const saveReason = async () => {
 .delay-badge.delay-delayed { color: #991b1b; background-color: #fee2e2; }
 .risk-badge { color: #9a3412; background-color: #ffedd5; }
 
-.table-button { min-height: 36px; padding: 0 14px; border: 0; background-color: #eaf8fd; color: #2784b8; font-size: 14px; }
+.table-button { min-height: 36px; padding: 0 10px; border: 0; background-color: #eaf8fd; color: #1f1f20; font-size: 14px; font-weight: 900; transition: all 0.2s; }
 .table-button:hover { background-color: #d9f0fa; }
 .table-button:disabled { opacity: 0.55; cursor: not-allowed; }
 .done-text { color: #94a3b8; font-size: 15px; font-weight: 800; }
@@ -1440,7 +1440,7 @@ const saveReason = async () => {
 .order-detail-panel { position: sticky; top: 86px; padding: 22px; }
 .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9; }
 .detail-label { color: #64748b; font-size: 14px; font-weight: 900; }
-.detail-head h2 { margin: 6px 0 0; color: #111827; font-size: 24px; font-weight: 900; }
+.detail-head h2 { margin: 6px 0 0; color: #111827; font-size: 13px; font-weight: 900; }
 .detail-sub-id { margin: 6px 0 0; color: #64748b; font-size: 15px; font-weight: 750; }
 
 .detail-section { padding-top: 20px; }
