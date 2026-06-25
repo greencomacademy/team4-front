@@ -2,9 +2,11 @@
 import { onBeforeMount, reactive, computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStoreStore } from '../../stores/store/useStoreStore';
+import { usePlatformSettingStore } from '../../stores/platform/usePlatformSettingStore';
 
 const router = useRouter();
 const store = useStoreStore();
+const platformSettingStore = usePlatformSettingStore();
 
 // 탭 상태 관리 ('basic', 'platform', 'operation')
 const activeTab = ref('basic');
@@ -24,6 +26,23 @@ const formData = reactive({
   closeTime: '',
   operationStatus: 'OPERATING'
 });
+const platformNameMap = {
+  BAEMIN: '배달의민족',
+  COUPANG_EATS: '쿠팡이츠',
+  YOGIYO: '요기요',
+  DDANGYO: '땡겨요',
+};
+
+const toPlatformViewData = (setting) => {
+  return {
+    platformType: setting.platformType,
+    name: platformNameMap[setting.platformType] || setting.platformType,
+    commissionRate: Number(setting.commissionRate || 0),
+    deliveryFee: Number(setting.deliveryFee || 0),
+    couponCost: Number(setting.couponCost || 0),
+  };
+};
+
 
 const isOvernightBusiness = computed(() => {
   if (
@@ -91,7 +110,7 @@ onBeforeMount(async () => {
       formData.phone = store.currentData.phone || '';
       formData.businessNumber = store.currentData.businessNumber || '';
       formData.address = store.currentData.address || '';
-      formData.detailAddress = store.currentData.detailAddress || '';
+      formData.detailAddress = store.currentData.addressDetail || '';
       formData.industryType = store.currentData.industryType || '';
       formData.kitchenCapacity = store.currentData.kitchenCapacity || '';
       formData.openTime = store.currentData.openTime?.slice(0, 5) || '';
@@ -112,6 +131,7 @@ onBeforeMount(async () => {
         closeTime: formData.closeTime,
         operationStatus: formData.operationStatus,
       };
+        await loadPlatformSettings();
     }
   } catch (error) {
     console.warn('백엔드 API 연결 실패. 테스트를 위해 매장 미등록 상태로 화면을 초기화합니다.');
@@ -287,16 +307,73 @@ const handleCancel = () => {
 // ==========================================
 // 2. [플랫폼 수수료 설정 탭] 상태 및 로직
 // ==========================================
-const platforms = reactive([
-  { id: 'BAEMIN', name: '배달의민족', commissionRate: 6.8, deliveryFee: 2600, couponFee: 800 },
-  { id: 'COUPANG', name: '쿠팡이츠', commissionRate: 9.8, deliveryFee: 3200, couponFee: 1200 },
-  { id: 'YOGIYO', name: '요기요', commissionRate: 8.5, deliveryFee: 2800, couponFee: 1000 },
-  { id: 'DDANGYO', name: '땡겨요', commissionRate: 4.5, deliveryFee: 1800, couponFee: 500 },
-]);
+const platforms = reactive([]);
+const loadPlatformSettings = async () => {
+  try {
+    const result =
+      await platformSettingStore.findAll();
 
-const handlePlatformSubmit = (platform) => {
-  // 실제 연동 시 PATCH /api/stores/platforms 등 호출
-  alert(`${platform.name} 플랫폼 수수료 정보가 수정되었습니다.`);
+    platforms.splice(
+      0,
+      platforms.length,
+      ...result.map(toPlatformViewData)
+    );
+  } catch (error) {
+    console.error('플랫폼 설정 조회 실패:', error);
+  }
+};
+
+const handlePlatformSubmit = async (platform) => {
+  if (
+    platform.commissionRate === null ||
+    platform.commissionRate === undefined ||
+    platform.commissionRate < 0 ||
+    platform.commissionRate > 100
+  ) {
+    alert('수수료율은 0 이상 100 이하로 입력해주세요.');
+    return;
+  }
+
+  if (
+    platform.deliveryFee === null ||
+    platform.deliveryFee === undefined ||
+    platform.deliveryFee < 0
+  ) {
+    alert('배달비 부담금은 0 이상으로 입력해주세요.');
+    return;
+  }
+
+  if (
+    platform.couponCost === null ||
+    platform.couponCost === undefined ||
+    platform.couponCost < 0
+  ) {
+    alert('쿠폰 부담금은 0 이상으로 입력해주세요.');
+    return;
+  }
+
+  const payload = {
+    commissionRate: platform.commissionRate,
+    deliveryFee: platform.deliveryFee,
+    couponCost: platform.couponCost,
+  };
+
+  try {
+    const updatedSetting =
+      await platformSettingStore.update(
+        platform.platformType,
+        payload
+      );
+
+    Object.assign(
+      platform,
+      toPlatformViewData(updatedSetting)
+    );
+
+    alert(`${platform.name} 플랫폼 수수료 정보가 수정되었습니다.`);
+  } catch (error) {
+    console.error('플랫폼 설정 수정 실패:', error);
+  }
 };
 
 // ==========================================
@@ -538,28 +615,40 @@ const handleOperationSubmit = async () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="platform in platforms" :key="platform.id">
+            <tr v-for="platform in platforms" :key="platform.platformType">
+              <tr v-if="platforms.length === 0">
+                <td colspan="5" class="empty-message">
+                  플랫폼 수수료 설정을 조회할 수 없습니다. 매장 등록 후 다시 확인해주세요.
+                </td>
+              </tr>
               <td><strong>{{ platform.name }}</strong></td>
               <td>
                 <div class="input-wrapper">
-                  <input type="number" class="input-field" v-model.number="platform.commissionRate" step="0.1">
+                  <input type="number" class="input-field" v-model.number="platform.commissionRate" step="0.1" min="0" max="100">
                   <span class="input-unit">%</span>
                 </div>
               </td>
               <td>
                 <div class="input-wrapper">
-                  <input type="number" class="input-field" v-model.number="platform.deliveryFee">
+                  <input type="number" class="input-field" v-model.number="platform.deliveryFee" min="0" title="플랫폼 또는 프로모션 정책에 따라 매장이 부담하는 주문당 쿠폰 금액입니다.">
                   <span class="input-unit">원</span>
                 </div>
               </td>
               <td>
                 <div class="input-wrapper">
-                  <input type="number" class="input-field" v-model.number="platform.couponFee">
+                  <input type="number" class="input-field" v-model.number="platform.couponCost  " min="0">
                   <span class="input-unit">원</span>
                 </div>
               </td>
               <td>
-                <button type="button" class="btn-sm-primary" @click="handlePlatformSubmit(platform)">수정 저장</button>
+                <button
+                  type="button"
+                  class="btn-sm-primary"
+                  :disabled="platformSettingStore.savingPlatformType === platform.platformType"
+                  @click="handlePlatformSubmit(platform)"
+                  >
+                  {{ platformSettingStore.savingPlatformType === platform.platformType ? '저장 중...' : '수정 저장' }}
+                </button>
               </td>
             </tr>
           </tbody>

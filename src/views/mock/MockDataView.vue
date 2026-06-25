@@ -7,7 +7,7 @@ const axios = myAxios;
 
 // [일반 주문 생성] 상태
 const generalCnt = ref(1); 
-const generalScenario = ref('MIXED');
+const generalScenario = ref('NORMAL'); // 기본 시나리오 값  
 
 // [지연 테스트 주문 생성] 상태 (캡처 이미지 시안에서는 제거되었으므로 내부 로직에서만 기본값 1 유지)
 const delayCnt = ref(1);
@@ -31,29 +31,48 @@ const addLog = (message) => {
 const handleError = (error) => {
   if (error.response && error.response.data) {
     const errorCode = error.response.data.code;
+
     if (errorCode === 'E04' || error.response.status === 401) {
       alert('인증이 만료되었습니다. 다시 로그인해 주세요.');
       return;
     }
+
     if (errorCode === 'E21' && error.response.data.data) {
       const fields = error.response.data.data;
-      const msg = Object.entries(fields).map(([field, text]) => `${field}: ${text}`).join('\n');
+      const msg = Object.entries(fields)
+        .map(([field, text]) => `${field}: ${text}`)
+        .join('\n');
+
       alert(`입력 유효성 실패:\n${msg}`);
       return;
     }
+
+    alert(
+      error.response.data.message ||
+      error.response.data.data ||
+      '요청 중 오류가 발생했습니다.'
+    );
+    return;
   }
-  alert('요청 중 오류가 발생했습니다: ' + (error.response?.data?.data || error.response?.data?.message));
+
+  alert('요청 중 오류가 발생했습니다.');
 };
 
 // 1. 일반 Mock 주문 (수량/시나리오 직접 지정)
 const createBaseMockData = async () => {
   try {
     // 💡 백엔드가 기대하는 기본 데이터를 객체 형태로 실어서 보냅니다.
-    await axios.post('/api/mock-data/orders', {
-      scenario: generalScenario.value,
+    const response = await axios.post('/api/mock-data/orders', {
+      scenario: 'NORMAL',
       count: generalCnt.value
     });
-    const msg = `${generalScenario.value} 시나리오 주문 ${generalCnt.value}건이 생성되었습니다.`;
+
+    const data = response.data.data;
+
+    const msg =
+      `일반 Mock 주문 ${data.createdCount}건이 생성되었습니다. ` +
+      `주문번호: ${data.orderNos.join(', ')}`;
+
     addLog(msg);
     alert(msg);
   } catch (error) {
@@ -64,8 +83,17 @@ const createBaseMockData = async () => {
 // 2. 단일 기능용 공통 호출 함수 (특정 시나리오 1건 생성)
 const createScenario = async (scenarioType, title) => {
   try {
-    await axios.post('/api/mock-data/orders', { scenario: scenarioType, count: 1 });
-    const msg = `${title} 주문 1건이 생성되었습니다.`;
+    const response = await axios.post('/api/mock-data/orders', {
+      scenario: scenarioType,
+      count: 1
+    });
+
+    const data = response.data.data;
+
+    const msg =
+      `${title} 주문 ${data.createdCount}건이 생성되었습니다. ` +
+      `주문번호: ${data.orderNos.join(', ')}`;
+
     addLog(msg);
     alert(msg);
   } catch (error) {
@@ -76,8 +104,17 @@ const createScenario = async (scenarioType, title) => {
 // 3. 지연 테스트 전용
 const createDelayOrder = async () => {
   try {
-    await axios.post('/api/mock-data/orders', { scenario: 'DELAY_TEST', count: delayCnt.value });
-    const msg = `조리 지연 테스트 주문 ${delayCnt.value}건이 생성되었습니다.`;
+    const response = await axios.post('/api/mock-data/orders', {
+      scenario: 'DELAY_TEST',
+      count: delayCnt.value
+    });
+
+    const data = response.data.data;
+
+    const msg =
+      `조리 지연 테스트 주문 ${data.createdCount}건이 생성되었습니다. ` +
+      `주문번호: ${data.orderNos.join(', ')}`;
+
     addLog(msg);
     alert(msg);
   } catch (error) {
@@ -88,8 +125,17 @@ const createDelayOrder = async () => {
 // 4. 발표 피크타임 세트 (여러 종류 일괄 생성)
 const createPeakMock = async () => {
   try {
-    await axios.post('/api/mock-data/orders/peak'); // 백엔드에 전용 API가 있다고 가정 (없다면 개별 호출 필요)
-    const msg = `발표용 피크타임 위험 주문 세트가 일괄 생성되었습니다.`;
+    const response = await axios.post('/api/mock-data/orders', {
+      scenario: 'PEAK_SET',
+      count: 1
+    });
+
+    const data = response.data.data;
+
+    const msg =
+      `발표용 피크타임 세트 ${data.createdCount}건이 생성되었습니다. ` +
+      `주문번호: ${data.orderNos.join(', ')}`;
+
     addLog(msg);
     alert(msg);
   } catch (error) {
@@ -99,10 +145,22 @@ const createPeakMock = async () => {
 
 // 5. Mock 주문 일괄 삭제
 const deleteMockOrders = async () => {
-  if (!confirm('정말 로그인한 매장의 모든 Mock 주문을 삭제하시겠습니까?')) return;
+  if (!confirm('정말 로그인한 매장의 모든 Mock 주문을 삭제하시겠습니까?')) {
+    return;
+  }
+
   try {
-    await axios.delete('/api/mock-data/orders');
-    const msg = `매장의 모든 Mock 주문 데이터가 삭제되었습니다.`;
+    const response =
+      await axios.delete('/api/mock-data/orders');
+
+    const data = response.data.data;
+
+    const deletedCount =
+      data?.deletedCount ?? data?.deletedOrderCount ?? 0;
+
+    const msg =
+      `매장의 Mock 주문 데이터 ${deletedCount}건이 삭제되었습니다.`;
+
     addLog(msg);
     alert(msg);
   } catch (error) {
@@ -132,14 +190,22 @@ const deleteMockOrders = async () => {
         <div class="card-body">
           <div class="input-group">
             <label>생성 내용</label>
-            <input type="text" class="input-field readonly-input" value="일반 주문 1건" readonly />
+            <select
+              v-model.number="generalCnt"
+              class="input-field select-field"
+              title="생성할 일반 Mock 주문 수를 선택합니다."
+              >
+              <option :value="1">1건</option>
+              <option :value="3">3건</option>
+              <option :value="5">5건</option>
+              <option :value="10">10건</option>
+              </select>
           </div>
         </div>
         <div class="card-footer">
           <button type="button" class="primary-button full-width-btn" @click="createBaseMockData">일반 주문 생성</button>
         </div>
       </section>
-
       <section class="mock-card">
         <div class="card-header">
           <h2>요구사항 위험 주문</h2>
@@ -149,9 +215,9 @@ const deleteMockOrders = async () => {
           <div class="input-group">
             <label>시나리오</label>
             <select v-model="generalScenario" class="input-field select-field">
-              <option value="MIXED">분쟁 가능 + 과도 요청</option>
-              <option value="GROUP">단체 주문 (과도 요청)</option>
-              <option value="PREMIUM">프리미엄 세트 (분쟁)</option>
+              <option value="MIXED">랜덤 혼합</option>
+              <option value="GROUP">단체 주문</option>
+              <option value="PREMIUM">프리미엄 세트</option>
             </select>
           </div>
         </div>
@@ -174,7 +240,22 @@ const deleteMockOrders = async () => {
       <section class="mock-card">
         <div class="card-header">
           <h2>지연 테스트 주문</h2>
-          <p>조리중 주의 상태로 생성합니다.</p>
+          <p>조리중 '주의' 상태로 생성합니다.</p>
+          </div>
+           <div class="card-body">
+              <div class="input-group">
+                <label>생성 내용</label>
+                <select
+                v-model.number="delayCnt"
+                class="input-field select-field"
+                title="생성할 지연 테스트 주문 수를 선택합니다."
+              >
+                <option :value="1">1건</option>
+                <option :value="3">3건</option>
+                <option :value="5">5건</option>
+                <option :value="10">10건</option>
+                </select>
+          </div>
         </div>
         <div class="card-body empty-body"></div>
         <div class="card-footer">
