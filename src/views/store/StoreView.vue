@@ -92,7 +92,7 @@ onBeforeMount(async () => {
       formData.businessNumber = store.currentData.businessNumber || '';
       formData.address = store.currentData.address || '';
       formData.detailAddress = store.currentData.detailAddress || '';
-      formData.industryType = store.currentData.category || '';
+      formData.industryType = store.currentData.industryType || '';
       formData.kitchenCapacity = store.currentData.kitchenCapacity || '';
       formData.openTime = store.currentData.openTime?.slice(0, 5) || '';
       formData.closeTime = store.currentData.closeTime?.slice(0, 5)  || '';
@@ -303,7 +303,6 @@ const handlePlatformSubmit = (platform) => {
 // 3. [운영 설정 탭] 상태 및 로직
 // ==========================================
 const operationData = reactive({
-  operationStatus: 'OPERATING',
   peakLoadRate: 100,
   warningKeywords: '알러지, 환불, 별점, 서비스 많이',
   cancelRateWarning: 8
@@ -422,7 +421,7 @@ const handleOperationSubmit = async () => {
           <div class="input-with-btn">
             <div class="biz-num-group">
               <input
-                v-model="businessNumberPart1"
+                v-model="bizNumParts.Part1"
                 required
                 inputmode="numeric"
                 maxlength="3"
@@ -434,7 +433,7 @@ const handleOperationSubmit = async () => {
               />
               <span class="dash">-</span>
               <input
-                v-model="businessNumberPart2"
+                v-model="bizNumParts.Part2"
                 required
                 inputmode="numeric"
                 maxlength="2"
@@ -446,7 +445,7 @@ const handleOperationSubmit = async () => {
               >
               <span class="dash">-</span>
               <input
-                v-model="businessNumberPart3"
+                v-model="bizNumParts.Part3"
                 required
                 inputmode="numeric"
                 maxlength="5"

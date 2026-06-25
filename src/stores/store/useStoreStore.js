@@ -78,6 +78,7 @@ const checkMyStore = async (force = false) => {
     } catch (error) {
       console.error(error);
       alert("매장 등록에 실패했습니다.");
+       throw error;
     }
   }
 
@@ -92,6 +93,7 @@ const checkMyStore = async (force = false) => {
     } catch (error) {
       console.error(error);
       alert("매장 삭제에 실패했습니다.");
+       throw error;
     }
   }
   /*
@@ -113,6 +115,7 @@ const clearStoreState = () => {
     } catch (error) {
       console.error(error);
       alert("매장 정보 수정에 실패했습니다.");
+       throw error;
     }
   }
 
