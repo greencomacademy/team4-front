@@ -395,7 +395,7 @@ const handleOperationSubmit = async () => {
         </div>
         <div class="input-group">
           <label title="매장의 주요 업종입니다. 메뉴 분석과 필터 기준으로 사용할 수 있습니다.">
-          업종
+          업종<span>*</span>
           </label>
           <select
             v-model="formData.industryType"
