@@ -21,7 +21,46 @@ const formData = reactive({
   industryType: '한식',
   kitchenCapacity: '',
   openTime: '',
-  closeTime: ''
+  closeTime: '',
+  operationStatus: 'OPERATING'
+});
+
+const isOvernightBusiness = computed(() => {
+  if (
+    !formData.openTime ||
+    !formData.closeTime
+  ) {
+    return false;
+  }
+
+  /*
+   * 종료 시간이 시작 시간보다 빠르거나 같으면
+   * 다음날 종료 영업으로 본다.
+   *
+   * 예)
+   * 18:00 ~ 02:00 → 다음날 02:00 종료
+   * 11:00 ~ 11:00 → 다음날 11:00 종료, 24시간 영업
+   */
+  return formData.closeTime <= formData.openTime;
+});
+
+const businessTimeGuide = computed(() => {
+  if (
+    !formData.openTime ||
+    !formData.closeTime
+  ) {
+    return '영업 시작 시간과 종료 시간을 입력하면 영업일 기준이 표시됩니다.';
+  }
+
+  if (formData.openTime === formData.closeTime) {
+    return `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 처리됩니다. 24시간 영업 설정입니다.`;
+  }
+
+  if (formData.closeTime < formData.openTime) {
+    return `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 처리됩니다.`;
+  }
+
+  return `${formData.openTime}부터 당일 ${formData.closeTime}까지 영업으로 처리됩니다.`;
 });
 
 const bizNumParts = reactive({ part1: '', part2: '', part3: '' });
@@ -53,10 +92,11 @@ onBeforeMount(async () => {
       formData.businessNumber = store.currentData.businessNumber || '';
       formData.address = store.currentData.address || '';
       formData.detailAddress = store.currentData.detailAddress || '';
-      formData.industryType = store.currentData.category || '한식';
+      formData.industryType = store.currentData.category || '';
       formData.kitchenCapacity = store.currentData.kitchenCapacity || '';
       formData.openTime = store.currentData.openTime?.slice(0, 5) || '';
       formData.closeTime = store.currentData.closeTime?.slice(0, 5)  || '';
+      formData.operationStatus = store.currentData.operationStatus || 'OPERATING';
 
       setBusinessNumberParts(store.currentData.businessNumber);
 
@@ -70,14 +110,112 @@ onBeforeMount(async () => {
         kitchenCapacity: String(formData.kitchenCapacity),
         openTime: formData.openTime,
         closeTime: formData.closeTime,
+        operationStatus: formData.operationStatus,
       };
     }
   } catch (error) {
     console.warn('백엔드 API 연결 실패. 테스트를 위해 매장 미등록 상태로 화면을 초기화합니다.');
   }
 });
+/*
+ * 브라우저 기본 required 메시지를
+ * 필드별 안내 문구로 바꾸는 함수
+ */
+const setInvalidMessage = (event, message) => {
+  event.target.setCustomValidity(message);
+};
+
+/*
+ * 사용자가 다시 입력하면
+ * 이전 custom validity 메시지를 초기화해야 한다.
+ */
+const clearInvalidMessage = (event) => {
+  event.target.setCustomValidity('');
+};
+
+// 유효성 검사
+
+const validateStoreForm = () => {
+  const currentBizNum = getBusinessNumber();
+
+  if (!formData.storeName.trim()) {
+    alert('매장명을 입력해주세요.');
+    activeTab.value = 'basic';
+    return false;
+  }
+
+  if (!formData.phone.trim()) {
+    alert('대표 전화번호를 입력해주세요.');
+    activeTab.value = 'basic';
+    return false;
+  }
+
+  if (!formData.address.trim()) {
+    alert('주소를 입력해주세요.');
+    activeTab.value = 'basic';
+    return false;
+  }
+
+  if (!formData.industryType) {
+    alert('업종을 선택해주세요.');
+    activeTab.value = 'basic';
+    return false;
+  }
+
+  if (!currentBizNum || currentBizNum.length !== 10) {
+    alert('사업자번호 10자리를 입력해주세요.');
+    activeTab.value = 'basic';
+    return false;
+  }
+
+  if (!formData.kitchenCapacity || Number(formData.kitchenCapacity) < 1) {
+    alert('주방 처리량은 1 이상으로 입력해주세요.');
+    activeTab.value = 'basic';
+    return false;
+  }
+
+  if (!formData.openTime) {
+    alert('영업 시작 시간을 입력해주세요.');
+    activeTab.value = 'basic';
+    return false;
+  }
+
+  if (!formData.closeTime) {
+    alert('영업 종료 시간을 입력해주세요.');
+    activeTab.value = 'basic';
+    return false;
+  }
+  if (formData.closeTime <= formData.openTime) {
+  const guideMessage =
+    formData.openTime === formData.closeTime
+      ? `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 저장됩니다.\n24시간 영업 설정입니다.`
+      : `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 저장됩니다.`;
+
+  const confirmed = confirm(
+    `영업 종료 시간이 시작 시간보다 빠르거나 같습니다.\n` +
+    `${guideMessage}\n\n` +
+    `이 설정으로 저장하시겠습니까?`
+  );
+
+  if (!confirmed) {
+    activeTab.value = 'basic';
+    return false;
+  }
+}
+
+  if (!formData.operationStatus) {
+    alert('매장 운영 상태를 선택해주세요.');
+    activeTab.value = 'operation';
+    return false;
+  }
+
+  return true;
+};
 
 const handleBasicSubmit = async () => {
+   if (!validateStoreForm()) {
+    return;
+  }
   const currentBizNum = getBusinessNumber();
 
   if (isExistingStore.value) {
@@ -91,7 +229,9 @@ const handleBasicSubmit = async () => {
     if (currentBizNum !== originalData.businessNumber) changedFields.businessNumber = currentBizNum;
     if (formData.openTime !== originalData.openTime) changedFields.openTime = formData.openTime;
     if (formData.closeTime !== originalData.closeTime) changedFields.closeTime = formData.closeTime;
-
+    if (formData.operationStatus !== originalData.operationStatus) {
+  changedFields.operationStatus = formData.operationStatus;
+}
     if (Object.keys(changedFields).length === 0) {
       alert('수정된 항목이 없습니다.');
       return;
@@ -100,8 +240,17 @@ const handleBasicSubmit = async () => {
     try {
       await store.updateStore(changedFields);
       alert('매장 정보가 성공적으로 수정되었습니다.');
-      Object.assign(originalData, { ...changedFields, kitchenCapacity: String(formData.kitchenCapacity) });
-      if (changedFields.businessNumber) originalData.businessNumber = currentBizNum;
+      Object.assign(originalData, {...changedFields,
+    kitchenCapacity: String(formData.kitchenCapacity),
+      });
+
+    if (changedFields.businessNumber) {
+      originalData.businessNumber = currentBizNum;
+    }
+
+    if (changedFields.operationStatus) {
+      originalData.operationStatus = formData.operationStatus;
+    }
     } catch (error) {
       console.error('수정 실패:', error);
     }
@@ -116,12 +265,13 @@ const handleBasicSubmit = async () => {
       kitchenCapacity: Number(formData.kitchenCapacity),
       openTime: formData.openTime,
       closeTime: formData.closeTime,
+      operationStatus: formData.operationStatus,
     };
     
     try {
       await store.storeForm(payload);
-      alert('매장이 성공적으로 등록되었습니다.');
-      await store.currentStore(); 
+      alert('매장이 성공적으로 등록되었습니다.\n 등록확인 후  대시보드로 이동해주세요.');
+      await store.currentStore();
     } catch (error) {
       console.error('등록 실패:', error);
     }
@@ -159,9 +309,8 @@ const operationData = reactive({
   cancelRateWarning: 8
 });
 
-const handleOperationSubmit = () => {
-  // 실제 연동 시 PATCH /api/stores/operation 등 호출
-  alert('매장 운영 설정이 저장되었습니다.');
+const handleOperationSubmit = async () => {
+  await handleBasicSubmit(); // 기본정보 저장 후 운영 설정 저장
 };
 </script>
 
@@ -191,29 +340,72 @@ const handleOperationSubmit = () => {
       
       <form class="grid-form" @submit.prevent="handleBasicSubmit">
         <div class="input-group">
-          <label>매장명 <span>*</span></label>
-          <input type="text" v-model="formData.storeName" placeholder="DeliveryInsider Kitchen" required>
+          <label title="고객과 리포트 화면에 표시될 매장 이름입니다.">
+          매장명 <span>*</span>
+          </label>
+          <input
+            v-model="formData.storeName"
+            required
+            placeholder="예: 배프김치찜 동대구점"
+            title="예: 배프김치찜 동대구점"
+            @invalid="setInvalidMessage($event, '매장명을 입력해주세요. 예: 배프김치찜 동대구점')"
+            @input="clearInvalidMessage($event)"
+          />
         </div>
         <div class="input-group">
-          <label>대표 전화번호 <span>*</span></label>
-          <input type="text" oninput="this.value=this.value.replace(/[^0-9]/g,'')" v-model="formData.phone" placeholder="0212345678" required maxlength="11">
+          <label title="주문 처리나 매장 연락처로 사용할 대표 전화번호입니다. 숫자만 입력해주세요.">
+          대표 전화번호 <span>*</span>
+          </label>
+          <input
+            v-model="formData.phone"
+            required
+            inputmode="numeric"
+            placeholder="예: 0212345678"
+            title="숫자만 입력하는 것을 권장합니다. 예: 0212345678"
+            @invalid="setInvalidMessage($event, '대표 전화번호를 입력해주세요. 예: 0212345678')"
+            @input="clearInvalidMessage($event)"
+          />
         </div>
         
         <div class="input-group full-width">
-          <label>주소 <span>*</span></label>
+          <label title="배달 주문의 기준 매장 주소입니다.">
+          주소 <span>*</span>
+          </label>
           <div class="input-with-btn">
-            <input type="text" v-model="formData.address" placeholder="주소를 검색해주세요" required style="background-color: #f9fafb;">
+            <input
+              v-model="formData.address"
+              required
+              placeholder="예: 대구광역시 동구 동대구로 475"
+              title="도로명 주소 또는 지번 주소를 입력해주세요."
+              @invalid="setInvalidMessage($event, '매장 주소를 입력해주세요.')"
+              @input="clearInvalidMessage($event)"
+            />
             <button type="button" class="btn-secondary">주소 검색</button>
           </div>
         </div>
 
         <div class="input-group">
-          <label>상세주소</label>
-          <input type="text" v-model="formData.detailAddress" placeholder="1층 101호">
+          <label title="상가명, 층수, 호수처럼 상세 위치를 입력합니다.">
+          상세주소
+          </label>
+          <input
+            v-model="formData.detailAddress"
+            placeholder="예: 101호, 2층, 푸드코트 A구역"
+            title="예: 101호, 2층, 푸드코트 A구역"
+          />
         </div>
         <div class="input-group">
-          <label>업종</label>
-          <select v-model="formData.industryType">
+          <label title="매장의 주요 업종입니다. 메뉴 분석과 필터 기준으로 사용할 수 있습니다.">
+          업종
+          </label>
+          <select
+            v-model="formData.industryType"
+            required
+            title="매장의 대표 업종을 선택해주세요."
+            @invalid="setInvalidMessage($event, '매장 업종을 선택해주세요.')"
+            @change="clearInvalidMessage($event)"
+          >
+            <option value="">업종을 선택해주세요.</option>
             <option value="한식">한식</option>
             <option value="중식">중식</option>
             <option value="일식">일식</option>
@@ -224,33 +416,100 @@ const handleOperationSubmit = () => {
         </div>
 
         <div class="input-group">
-          <label>사업자번호 <span>*</span></label>
+          <label title="사업자 식별용 번호입니다. 10자리 숫자로 입력합니다.">
+          사업자번호 <span>*</span>
+          </label>
           <div class="input-with-btn">
             <div class="biz-num-group">
-              <input type="text" maxlength="3" v-model="bizNumParts.part1" required>
+              <input
+                v-model="businessNumberPart1"
+                required
+                inputmode="numeric"
+                maxlength="3"
+                pattern="[0-9]{3}"
+                placeholder="123"
+                title="사업자번호 앞 3자리입니다."
+                @invalid="setInvalidMessage($event, '사업자번호 앞 3자리를 입력해주세요.')"
+                @input="clearInvalidMessage($event)"
+              />
               <span class="dash">-</span>
-              <input type="text" maxlength="2" v-model="bizNumParts.part2" required>
+              <input
+                v-model="businessNumberPart2"
+                required
+                inputmode="numeric"
+                maxlength="2"
+                pattern="[0-9]{2}"
+                placeholder="45"
+                title="사업자번호 중간 2자리입니다."
+                @invalid="setInvalidMessage($event, '사업자번호 중간 2자리를 입력해주세요.')"
+                @input="clearInvalidMessage($event)"
+              >
               <span class="dash">-</span>
-              <input type="text" maxlength="5" v-model="bizNumParts.part3" required>
+              <input
+                v-model="businessNumberPart3"
+                required
+                inputmode="numeric"
+                maxlength="5"
+                pattern="[0-9]{5}"
+                placeholder="67890"
+                title="사업자번호 뒷 5자리입니다."
+                @invalid="setInvalidMessage($event, '사업자번호 뒷 5자리를 입력해주세요.')"
+                @input="clearInvalidMessage($event)"
+              >
             </div>
             <button type="button" class="btn-secondary">형식 확인</button>
           </div>
         </div>
 
         <div class="input-group">
-          <label>주방 처리량 <span>*</span></label>
-          <input type="number" min="1" v-model="formData.kitchenCapacity" placeholder="예: 50" required>
+          <label title="동시에 조리 처리 가능한 주문 수입니다. &#10 지연 위험과 주방 부하율 계산에 사용됩니다.&#10 예: 3이면 동시에 3건 정도 처리 가능하다는 의미입니다.">
+          주방 처리량 <span>*</span>
+          </label>
+          <input
+            type="number"
+            v-model="formData.kitchenCapacity"
+            required
+            min="1"
+            placeholder="예: 3"
+            title="예: 3이면 동시에 주문 3건 정도를 처리할 수 있다는 의미입니다."
+            @invalid="setInvalidMessage($event, '주방 처리량을 입력해주세요. 예: 3이면 동시에 주문 3건 정도 처리 가능하다는 의미입니다.')"
+            @input="clearInvalidMessage($event)"
+          />
         </div>
         
         <div class="input-group">
-          <label>영업 시작 시간 <span>*</span></label>
-          <input type="time" v-model="formData.openTime" required>
+          <label title="매장 영업일 계산의 시작 시간이 됩니다. 대시보드와 오늘 주문 조회 기준에 사용됩니다.">
+          영업 시작 시간 <span>*</span>
+          </label>
+          <input
+            type="time"
+            v-model="formData.openTime"
+            required
+            title="예: 오전 11시 시작이면 11:00으로 선택합니다."
+            @invalid="setInvalidMessage($event, '영업 시작 시간을 선택해주세요.')"
+            @input="clearInvalidMessage($event)"
+          />
         </div>
 
         <div class="input-group">
-          <label>영업 종료 시간 <span>*</span></label>
-          <input type="time" v-model="formData.closeTime" required>
+          <label title="매장 영업일 계산의 종료 시간이 됩니다. 시작 시간보다 빠르면 다음날 종료로 처리됩니다.">
+          영업 종료 시간 <span>*</span>
+          </label>
+          <input
+            type="time"
+            v-model="formData.closeTime"
+            required
+            title="예: 02:00이면 다음날 새벽 2시 종료로 처리될 수 있습니다."
+            @invalid="setInvalidMessage($event, '영업 종료 시간을 선택해주세요. 시작 시간보다 빠르거나 같으면 다음날 종료로 처리됩니다.')"
+            @input="clearInvalidMessage($event)"
+          />
         </div>
+        <p
+          class="business-time-guide full-width"
+            :class="{ overnight: isOvernightBusiness }"
+        >
+            {{ businessTimeGuide }}
+        </p>
 
         <div class="form-actions full-width">
           <button type="button" class="btn-cancel" @click="handleCancel">취소</button>
@@ -319,23 +578,47 @@ const handleOperationSubmit = () => {
       <form class="grid-form" @submit.prevent="handleOperationSubmit">
         <div class="input-group">
           <label>매장 운영 상태</label>
-          <select v-model="operationData.operationStatus">
+          <select
+            v-model="formData.operationStatus"
+            required
+            title="운영중, 휴업, 폐업 중 현재 매장 상태를 선택합니다."
+            @invalid="setInvalidMessage($event, '매장 운영 상태를 선택해주세요.')"
+            @change="clearInvalidMessage($event)"
+          >
+            <option value="">운영 상태를 선택해주세요.</option>
             <option value="OPERATING">운영중</option>
-            <option value="TEMP_CLOSED">휴업</option>
-            <option value="CLOSED">폐업</option>
+            <option value="TEMP_CLOSE">휴업</option>
+            <option value="CLOSE">폐업</option>
           </select>
         </div>
         <div class="input-group">
           <label>피크타임 부하율 기준</label>
-          <input type="number" v-model.number="operationData.peakLoadRate">
+          <input
+            type="number"
+            v-model="operationData.peakLoadRate"
+            min="1"
+            placeholder="예: 100"
+            title="예: 100이면 부하율이 100% 이상일 때 피크타임으로 판단합니다."
+          />
         </div>
         <div class="input-group">
           <label>요구사항 경고 기준</label>
-          <input type="text" v-model="operationData.warningKeywords" placeholder="콤마(,)로 구분">
+          <input
+            v-model="operationData.warningKeywords"
+            placeholder="예: 알러지, 환불, 별점, 서비스 많이"
+            title="쉼표로 구분해서 입력합니다. 예: 알러지, 환불, 별점, 서비스 많이"
+          />
         </div>
         <div class="input-group">
           <label>취소율 주의 기준</label>
-          <input type="number" v-model.number="operationData.cancelRateWarning">
+          <input
+            type="number"
+            v-model="operationData.cancelRateWarning"
+            min="0"
+            max="100"
+            placeholder="예: 8"
+            title="예: 8이면 취소율이 8% 이상일 때 주의 상태로 볼 수 있습니다."
+          />
         </div>
         
         <div class="info-banner full-width">
@@ -355,6 +638,23 @@ const handleOperationSubmit = () => {
 /* =======================================
    전체 레이아웃 및 탭
 ======================================= */
+.business-time-guide {
+  margin: -8px 0 4px;
+  padding: 12px 14px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.business-time-guide.overnight {
+  border-color: #fed7aa;
+  background-color: #fff7ed;
+  color: #9a3412;
+}
 .page-section {
   max-width: 100%;
   margin: 0 auto;
