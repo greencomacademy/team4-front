@@ -22,8 +22,12 @@ const platformSortOption = ref('profitDesc');
 const selectedCompareMenuId = ref('');
 const lossSearchKeyword = ref('');
 const lossSortOption = ref('riskDesc');
-const lossRiskFilter = ref('');
 const showDismissedLossMenus = ref(false);
+
+const baseCurrentPage = ref(1);
+const basePageSize = 10;
+const lossCurrentPage = ref(1);
+const lossPageSize = 4;
 const changingLossDismissMenuId = ref(null);
 
 const formData = reactive({
@@ -283,6 +287,38 @@ const filteredBaseMenus = computed(() => {
   );
 });
 
+const baseTotalPages = computed(() => {
+  return Math.max(1, Math.ceil(filteredBaseMenus.value.length / basePageSize));
+});
+
+const pagedBaseMenus = computed(() => {
+  const startIndex = (baseCurrentPage.value - 1) * basePageSize;
+
+  return filteredBaseMenus.value.slice(startIndex, startIndex + basePageSize);
+});
+
+const basePageNumbers = computed(() => {
+  return Array.from({ length: baseTotalPages.value }, (_, index) => index + 1);
+});
+
+const changeBasePage = (page) => {
+  if (page < 1 || page > baseTotalPages.value) {
+    return;
+  }
+
+  baseCurrentPage.value = page;
+};
+
+watch([baseSearchKeyword, baseSortOption], () => {
+  baseCurrentPage.value = 1;
+});
+
+watch(baseTotalPages, () => {
+  if (baseCurrentPage.value > baseTotalPages.value) {
+    baseCurrentPage.value = baseTotalPages.value;
+  }
+});
+
 const platformCandidateMenus = computed(() => {
   return sortMenus(
     filterMenusByKeyword(enrichedMenus.value, platformSearchKeyword.value),
@@ -386,23 +422,23 @@ const platformCompareData = computed(() => {
 const getLossRiskBadges = (menu) => {
   const badges = [];
 
-  if (menu.expectedMargin <= 0 || menu.profitRate < 10) {
+  if (menu.expectedMargin <= 0 || menu.profitRate < 15) {
     badges.push({ code: 'LOW_PROFIT', label: '낮은 수익률' });
   }
 
-  if (menu.costRate >= 40) {
+  if (menu.costRate >= 45) {
     badges.push({ code: 'HIGH_COST', label: '높은 원가' });
   }
 
-  if (menu.packageRate >= 9) {
+  if (menu.packageRate >= 10) {
     badges.push({ code: 'HIGH_PACKAGE', label: '높은 포장비' });
   }
 
-  if (menu.totalSalesQuantity >= 20 && menu.profitRate < 15) {
+  if (menu.totalSalesQuantity >= 10 && menu.profitRate < 18) {
     badges.push({ code: 'HIGH_SALES_LOW_MARGIN', label: '마진 누적' });
   }
 
-  if (menu.expectedCookingTime >= 45 && menu.profitRate < 18) {
+  if (menu.expectedCookingTime >= 45 && menu.profitRate < 15) {
     badges.push({ code: 'LONG_COOKING', label: '조리 부하' });
   }
 
@@ -412,28 +448,29 @@ const getLossRiskBadges = (menu) => {
 const isHiddenLossCandidate = (menu) => {
   return menu.expectedMargin <= 0 ||
     menu.profitRate < 15 ||
-    menu.costRate >= 40 ||
-    menu.packageRate >= 9 ||
-    (menu.totalSalesQuantity >= 20 && menu.profitRate < 15) ||
-    (menu.expectedCookingTime >= 45 && menu.profitRate < 18);
+    menu.costRate >= 45 ||
+    menu.packageRate >= 10 ||
+    (menu.totalSalesQuantity >= 10 && menu.profitRate < 18) ||
+    (menu.expectedCookingTime >= 45 && menu.profitRate < 15);
 };
 
 const getLossRiskScore = (menu) => {
   let score = 0;
 
   if (menu.expectedMargin <= 0) score += 60;
-  if (menu.profitRate < 8) score += 40;
-  else if (menu.profitRate < 10) score += 30;
-  else if (menu.profitRate < 15) score += 18;
+  if (menu.profitRate < 8) score += 35;
+  else if (menu.profitRate < 12) score += 22;
+  else if (menu.profitRate < 15) score += 12;
 
-  if (menu.costRate >= 45) score += 30;
-  else if (menu.costRate >= 40) score += 18;
+  if (menu.costRate >= 55) score += 32;
+  else if (menu.costRate >= 45) score += 18;
 
-  if (menu.packageRate >= 12) score += 24;
-  else if (menu.packageRate >= 9) score += 14;
+  if (menu.packageRate >= 15) score += 24;
+  else if (menu.packageRate >= 10) score += 12;
 
-  if (menu.totalSalesQuantity >= 20 && menu.profitRate < 15) score += 20;
-  if (menu.expectedCookingTime >= 45 && menu.profitRate < 18) score += 10;
+  if (menu.totalSalesQuantity >= 10 && menu.profitRate < 12) score += 20;
+  else if (menu.totalSalesQuantity >= 10 && menu.profitRate < 18) score += 10;
+  if (menu.expectedCookingTime >= 45 && menu.profitRate < 15) score += 8;
 
   return score;
 };
@@ -443,9 +480,10 @@ const getLossRiskLevel = (menu) => {
 
   if (
     menu.expectedMargin <= 0 ||
-    menu.profitRate < 10 ||
-    menu.costRate >= 45 ||
-    menu.packageRate >= 12 ||
+    menu.profitRate < 8 ||
+    menu.costRate >= 55 ||
+    menu.packageRate >= 15 ||
+    (menu.totalSalesQuantity >= 10 && menu.profitRate < 12) ||
     score >= 45
   ) {
     return 'DANGER';
@@ -456,9 +494,9 @@ const getLossRiskLevel = (menu) => {
 
 const getLossRiskLabel = (level) => {
   return {
-    DANGER: '위험',
-    WARNING: '주의',
-  }[level] || '주의';
+    DANGER: '우선 확인',
+    WARNING: '확인 필요',
+  }[level] || '확인 필요';
 };
 
 const getLossRiskClass = (level) => {
@@ -481,19 +519,19 @@ const lossMenus = computed(() => {
         reasons.push(`예상 순수익률이 ${menu.profitRate}%로 낮습니다.`);
       }
 
-      if (menu.costRate >= 40) {
+      if (menu.costRate >= 45) {
         reasons.push(`원가 비중이 ${menu.costRate}%로 높습니다.`);
       }
 
-      if (menu.packageRate >= 9) {
+      if (menu.packageRate >= 10) {
         reasons.push(`포장비 비중이 ${menu.packageRate}%입니다.`);
       }
 
-      if (menu.totalSalesQuantity >= 20 && menu.profitRate < 15) {
-        reasons.push('판매 수량이 많아 낮은 마진이 누적될 가능성이 큽니다.');
+      if (menu.totalSalesQuantity >= 10 && menu.profitRate < 18) {
+        reasons.push('판매 수량이 있어 낮은 마진이 누적될 가능성이 있습니다.');
       }
 
-      if (menu.expectedCookingTime >= 45 && menu.profitRate < 18) {
+      if (menu.expectedCookingTime >= 45 && menu.profitRate < 15) {
         reasons.push(`예상 조리시간이 ${menu.expectedCookingTime}분으로 피크타임 부하를 높일 수 있습니다.`);
       }
 
@@ -503,23 +541,23 @@ const lossMenus = computed(() => {
 
       const actions = [];
 
-      if (menu.expectedMargin <= 0 || menu.profitRate < 10) {
+      if (menu.expectedMargin <= 0 || menu.profitRate < 12) {
         actions.push('판매가 또는 원가 구조 재검토');
       }
 
-      if (menu.costRate >= 40) {
+      if (menu.costRate >= 45) {
         actions.push('원재료 원가 또는 판매가 재검토');
       }
 
-      if (menu.packageRate >= 9) {
+      if (menu.packageRate >= 10) {
         actions.push('포장비가 높은 메뉴는 묶음 주문 유도');
       }
 
-      if (menu.totalSalesQuantity >= 20 && menu.profitRate < 15) {
+      if (menu.totalSalesQuantity >= 10 && menu.profitRate < 18) {
         actions.push('판매건수가 많은 플랫폼의 수수료 차이 우선 확인');
       }
 
-      if (menu.expectedCookingTime >= 45 && menu.profitRate < 18) {
+      if (menu.expectedCookingTime >= 45 && menu.profitRate < 15) {
         actions.push('피크타임에는 예상 조리시간 안내 강화');
       }
 
@@ -557,14 +595,10 @@ const filteredLossMenus = computed(() => {
     const keywordMatched = !keyword ||
       String(menu.menuName || '').toLowerCase().includes(keyword);
 
-    const riskMatched = !lossRiskFilter.value ||
-      menu.riskLevel === lossRiskFilter.value ||
-      menu.riskBadges.some((badge) => badge.code === lossRiskFilter.value);
-
     const dismissedMatched =
       showDismissedLossMenus.value || !menu.isDismissed;
 
-    return keywordMatched && riskMatched && dismissedMatched;
+    return keywordMatched && dismissedMatched;
   });
 
   return [...filtered].sort((a, b) => {
@@ -594,6 +628,38 @@ const filteredLossMenus = computed(() => {
 
     return String(a.menuName || '').localeCompare(String(b.menuName || ''), 'ko-KR');
   });
+});
+
+const lossTotalPages = computed(() => {
+  return Math.max(1, Math.ceil(filteredLossMenus.value.length / lossPageSize));
+});
+
+const pagedLossMenus = computed(() => {
+  const startIndex = (lossCurrentPage.value - 1) * lossPageSize;
+
+  return filteredLossMenus.value.slice(startIndex, startIndex + lossPageSize);
+});
+
+const lossPageNumbers = computed(() => {
+  return Array.from({ length: lossTotalPages.value }, (_, index) => index + 1);
+});
+
+const changeLossPage = (page) => {
+  if (page < 1 || page > lossTotalPages.value) {
+    return;
+  }
+
+  lossCurrentPage.value = page;
+};
+
+watch([lossSearchKeyword, lossSortOption, showDismissedLossMenus], () => {
+  lossCurrentPage.value = 1;
+});
+
+watch(lossTotalPages, () => {
+  if (lossCurrentPage.value > lossTotalPages.value) {
+    lossCurrentPage.value = lossTotalPages.value;
+  }
 });
 
 const activeLossMenus = computed(() => {
@@ -700,6 +766,11 @@ const restoreDismissedLossMenu = async (menu) => {
         </label>
       </div>
 
+      <div class="menu-page-result-line">
+        조건에 맞는 메뉴 <strong>{{ filteredBaseMenus.length }}개</strong>
+        <span>· {{ baseCurrentPage }}/{{ baseTotalPages }}페이지 · 한 페이지 {{ basePageSize }}개</span>
+      </div>
+
       <div class="table-responsive">
         <table class="data-table base-menu-table">
           <thead>
@@ -721,7 +792,7 @@ const restoreDismissedLossMenu = async (menu) => {
             </tr>
             <tr
               v-else
-              v-for="menu in filteredBaseMenus"
+              v-for="menu in pagedBaseMenus"
               :key="menu.menuId"
               class="clickable-row"
               @click="openEditModal(menu)"
@@ -748,6 +819,37 @@ const restoreDismissedLossMenu = async (menu) => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div v-if="filteredBaseMenus.length > basePageSize" class="menu-pagination">
+        <button
+          type="button"
+          class="pagination-button"
+          :disabled="baseCurrentPage === 1"
+          @click="changeBasePage(baseCurrentPage - 1)"
+        >
+          이전
+        </button>
+
+        <button
+          v-for="page in basePageNumbers"
+          :key="`base-page-${page}`"
+          type="button"
+          class="pagination-number"
+          :class="{ active: baseCurrentPage === page }"
+          @click="changeBasePage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <button
+          type="button"
+          class="pagination-button"
+          :disabled="baseCurrentPage === baseTotalPages"
+          @click="changeBasePage(baseCurrentPage + 1)"
+        >
+          다음
+        </button>
       </div>
     </section>
 
@@ -861,16 +963,16 @@ const restoreDismissedLossMenu = async (menu) => {
       <div class="card-header border-bottom">
         <div class="title-area">
           <h2>숨은 손실 메뉴</h2>
-          <p>전체 메뉴가 아니라 위험·주의 기준에 걸린 후보만 보여줍니다.</p>
+          <p>전체 메뉴가 아니라 수익성 확인이 필요한 후보만 보여줍니다.</p>
         </div>
         <div class="loss-summary-pill">
-          후보 {{ lossSummary.total }}개 · 위험 {{ lossSummary.danger }}개 · 주의 {{ lossSummary.warning }}개 · 확인완료 {{ lossSummary.dismissed }}개
+          후보 {{ lossSummary.total }}개 · 우선확인 {{ lossSummary.danger }}개 · 확인필요 {{ lossSummary.warning }}개 · 확인완료 {{ lossSummary.dismissed }}개
         </div>
       </div>
 
       <div class="loss-criteria-box">
         <strong>판정 기준</strong>
-        <p>단품 예상 순수익률 15% 미만, 원가율 40% 이상, 포장비율 9% 이상, 판매량이 많지만 마진이 낮은 메뉴만 후보로 표시합니다. 확인 완료한 메뉴는 7일간 기본 목록에서 숨깁니다.</p>
+        <p>단품 예상 순수익률 15% 미만, 원가율 45% 이상, 포장비율 10% 이상, 판매량이 있지만 마진이 낮은 메뉴를 참고 후보로 표시합니다. 음료·사이드·이벤트 메뉴처럼 전략적으로 운영하는 메뉴는 확인 완료 처리할 수 있습니다.</p>
       </div>
 
       <div class="menu-filter-panel loss-filter-panel">
@@ -886,26 +988,12 @@ const restoreDismissedLossMenu = async (menu) => {
         <label class="filter-field sort-field">
           <span>정렬</span>
           <select v-model="lossSortOption">
-            <option value="riskDesc">위험도 높은순</option>
+            <option value="riskDesc">확인 우선순위 높은순</option>
             <option value="profitRateAsc">수익률 낮은순</option>
             <option value="expectedMarginAsc">예상 순수익 낮은순</option>
             <option value="salesDesc">판매 수량 많은순</option>
             <option value="costRateDesc">원가율 높은순</option>
             <option value="packageRateDesc">포장비율 높은순</option>
-          </select>
-        </label>
-
-        <label class="filter-field sort-field">
-          <span>위험 유형</span>
-          <select v-model="lossRiskFilter">
-            <option value="">전체 후보</option>
-            <option value="DANGER">위험</option>
-            <option value="WARNING">주의</option>
-            <option value="LOW_PROFIT">낮은 수익률</option>
-            <option value="HIGH_COST">높은 원가</option>
-            <option value="HIGH_PACKAGE">높은 포장비</option>
-            <option value="HIGH_SALES_LOW_MARGIN">마진 누적</option>
-            <option value="LONG_COOKING">조리 부하</option>
           </select>
         </label>
 
@@ -920,13 +1008,14 @@ const restoreDismissedLossMenu = async (menu) => {
 
       <div class="filter-result-line loss-result-line">
         현재 조건에 맞는 손실 후보 <strong>{{ lossSummary.filtered }}개</strong>
+        <span>· {{ lossCurrentPage }}/{{ lossTotalPages }}페이지 · 한 페이지 {{ lossPageSize }}개</span>
         <span>· 확인 완료 {{ lossSummary.dismissed }}개는 기본 목록에서 제외</span>
         <span>· 전체 메뉴는 메뉴 기준정보 탭에서 확인</span>
       </div>
 
       <div class="loss-menu-grid refined">
         <article
-          v-for="menu in filteredLossMenus"
+          v-for="menu in pagedLossMenus"
           :key="menu.menuId"
           class="loss-menu-card"
           :class="[getLossRiskClass(menu.riskLevel), { dismissed: menu.isDismissed }]"
@@ -1021,6 +1110,37 @@ const restoreDismissedLossMenu = async (menu) => {
         <div v-if="filteredLossMenus.length === 0" class="empty-state loss-empty-state">
           현재 조건에 맞는 숨은 손실 메뉴가 없습니다.
         </div>
+      </div>
+
+      <div v-if="filteredLossMenus.length > lossPageSize" class="menu-pagination loss-pagination">
+        <button
+          type="button"
+          class="pagination-button"
+          :disabled="lossCurrentPage === 1"
+          @click="changeLossPage(lossCurrentPage - 1)"
+        >
+          이전
+        </button>
+
+        <button
+          v-for="page in lossPageNumbers"
+          :key="`loss-page-${page}`"
+          type="button"
+          class="pagination-number"
+          :class="{ active: lossCurrentPage === page }"
+          @click="changeLossPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <button
+          type="button"
+          class="pagination-button"
+          :disabled="lossCurrentPage === lossTotalPages"
+          @click="changeLossPage(lossCurrentPage + 1)"
+        >
+          다음
+        </button>
       </div>
     </section>
 
@@ -1452,7 +1572,7 @@ const restoreDismissedLossMenu = async (menu) => {
 }
 
 .loss-filter-panel {
-  grid-template-columns: minmax(260px, 1fr) 220px 220px 220px;
+  grid-template-columns: minmax(260px, 1fr) 240px 240px;
   margin-top: 18px;
 }
 
@@ -1705,6 +1825,69 @@ const restoreDismissedLossMenu = async (menu) => {
 .loss-empty-state {
   grid-column: 1 / -1;
   padding: 40px 0;
+}
+
+
+.menu-page-result-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 13px 15px;
+  border-radius: 14px;
+  color: #334155;
+  background: #f8fafc;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.menu-page-result-line strong {
+  color: #2784b8;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.menu-page-result-line span {
+  color: #64748b;
+}
+
+.menu-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 18px;
+}
+
+.pagination-button,
+.pagination-number {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  color: #475569;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pagination-number.active {
+  color: #ffffff;
+  border-color: #2784b8;
+  background: #2784b8;
+}
+
+.pagination-button:disabled,
+.pagination-number:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.loss-pagination {
+  margin-top: 20px;
 }
 
 /* 버튼 스타일 */

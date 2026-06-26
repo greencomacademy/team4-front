@@ -20,11 +20,9 @@ const toDateInputValue = (date) => {
 };
 
 const todayDate = new Date();
-const sevenDaysAgo = new Date();
-sevenDaysAgo.setDate(todayDate.getDate() - 7);
 
 const today = toDateInputValue(todayDate);
-const defaultStartDate = toDateInputValue(sevenDaysAgo);
+const defaultStartDate = today;
 
 // ==========================================
 // 1. 상태 관리
@@ -39,6 +37,9 @@ const filters = ref({
   risk: '',
   keyword: '',
 });
+
+const salesCurrentPage = ref(1);
+const salesPageSize = 10;
 
 // ==========================================
 // 2. 화면 표시용 이름 매핑
@@ -101,8 +102,27 @@ const reasonTypeLabels = [
 // ==========================================
 const orders = computed(() => reportStore.reportOrders);
 
+const getReportSortValue = (order) => {
+  const rawDateTime =
+    order.orderedAt ||
+    order.completedAt ||
+    order.canceledAt ||
+    order.refundedAt ||
+    '';
+
+  const time = new Date(rawDateTime).getTime();
+
+  if (!Number.isNaN(time)) {
+    return time;
+  }
+
+  return Number(order.id || 0);
+};
+
 const filteredOrders = computed(() => {
-  return orders.value;
+  return [...orders.value].sort((a, b) => {
+    return getReportSortValue(b) - getReportSortValue(a);
+  });
 });
 
 const salesOrders = computed(() => {
@@ -110,6 +130,38 @@ const salesOrders = computed(() => {
     return order.orderStatus === 'COMPLETED';
   });
 });
+
+const salesTotalPages = computed(() => {
+  return Math.max(
+    1,
+    Math.ceil(salesOrders.value.length / salesPageSize)
+  );
+});
+
+const pagedSalesOrders = computed(() => {
+  const startIndex =
+    (salesCurrentPage.value - 1) * salesPageSize;
+
+  return salesOrders.value.slice(
+    startIndex,
+    startIndex + salesPageSize
+  );
+});
+
+const salesPageNumbers = computed(() => {
+  return Array.from(
+    { length: salesTotalPages.value },
+    (_, index) => index + 1
+  );
+});
+
+const changeSalesPage = (page) => {
+  if (page < 1 || page > salesTotalPages.value) {
+    return;
+  }
+
+  salesCurrentPage.value = page;
+};
 
 const cancelOrders = computed(() => {
   return filteredOrders.value.filter((order) => {
@@ -162,6 +214,10 @@ const summaryStats = computed(() => {
 
   const closedCount = canceled.length + refunded.length;
 
+  const cancelRate = filteredOrders.value.length
+    ? Math.round((canceled.length / filteredOrders.value.length) * 1000) / 10
+    : 0;
+
   const closedRate = filteredOrders.value.length
     ? Math.round((closedCount / filteredOrders.value.length) * 1000) / 10
     : 0;
@@ -170,6 +226,7 @@ const summaryStats = computed(() => {
     totalSales,
     totalProfit,
     cancelCount: canceled.length,
+    cancelRate,
     refundCount: refunded.length,
     closedCount,
     closedRate,
@@ -282,6 +339,7 @@ const applyRouteQueryToReport = () => {
 // 5. API 호출 함수
 // ==========================================
 const searchReports = async () => {
+  salesCurrentPage.value = 1;
   await reportStore.findOrders(filters.value);
 };
 
@@ -469,7 +527,7 @@ onMounted(() => {
       <div class="card-header">
         <div class="title-area">
           <h2>매출 리포트</h2>
-          <p class="required-note">완료 주문 기준으로 매출과 예상 순수익을 확인합니다.</p>
+          <p class="required-note">매장 영업일 기준으로 완료 매출과 예상 순수익을 확인합니다.</p>
         </div>
         <button class="primary-button" @click="exportExcel('매출')">매출 내보내기</button>
       </div>
@@ -478,7 +536,7 @@ onMounted(() => {
         <article class="summary-box">
           <span>완료 매출</span>
           <strong>{{ formatMoney(summaryStats.totalSales) }}</strong>
-          <p>완료 주문 {{ summaryStats.completedCount }}건 기준</p>
+          <p>영업일 기준 완료 주문 집계</p>
         </article>
         <article class="summary-box">
           <span>예상 순수익</span>
@@ -491,9 +549,9 @@ onMounted(() => {
           <p>취소율 {{ summaryStats.cancelRate }}%</p>
         </article>
         <article class="summary-box">
-          <span>조회 주문</span>
+          <span>주문 조회</span>
           <strong>{{ summaryStats.totalCount }}건</strong>
-          <p>현재 필터 기준</p>
+          <p>영업일 기준</p>
         </article>
       </section>
 
@@ -517,7 +575,7 @@ onMounted(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="order in salesOrders" :key="order.orderNo">
+          <tr v-for="order in pagedSalesOrders" :key="order.orderNo">
             <td class="text-muted cancel-date-cell">{{ order.orderDate }}</td>
             <td class="cancel-status-cell">
               <strong class="order-no-main">{{ order.platformOrderNo }}</strong>
@@ -547,6 +605,40 @@ onMounted(() => {
           </tr>
         </tbody>
         </table>
+      </div>
+
+      <div
+        v-if="salesOrders.length > salesPageSize"
+        class="pagination report-pagination"
+      >
+        <button
+          type="button"
+          class="page-button"
+          :disabled="salesCurrentPage === 1"
+          @click="changeSalesPage(salesCurrentPage - 1)"
+        >
+          이전
+        </button>
+
+        <button
+          v-for="page in salesPageNumbers"
+          :key="page"
+          type="button"
+          class="page-number"
+          :class="{ active: salesCurrentPage === page }"
+          @click="changeSalesPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <button
+          type="button"
+          class="page-button"
+          :disabled="salesCurrentPage === salesTotalPages"
+          @click="changeSalesPage(salesCurrentPage + 1)"
+        >
+          다음
+        </button>
       </div>
     </article>
 
@@ -1658,6 +1750,45 @@ onMounted(() => {
 .sales-report-combined-card .data-table td:nth-child(12) { width: 92px; }
 .sales-report-combined-card .data-table th:nth-child(13),
 .sales-report-combined-card .data-table td:nth-child(13) { width: 108px; }
+
+
+.report-pagination {
+  margin-top: 18px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.page-button,
+.page-number {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 13px;
+  border: 1px solid #d5e1f1;
+  border-radius: 10px;
+  background: #fff;
+  color: #38516d;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.page-number.active {
+  border-color: #2784b8;
+  background: #2784b8;
+  color: #fff;
+}
+
+.page-button:disabled,
+.page-number:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 .report-cancel-layout .data-table {
   min-width: 1180px;

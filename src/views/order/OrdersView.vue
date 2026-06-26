@@ -36,6 +36,13 @@ const reasonInput = ref('');
 // 1. 화면 구조 확인용 임시 주문 데이터 (HTML 시안과 동일한 데이터 속성 반영)
 const orders = ref([]);
 
+// 오늘 주문 관리에서 실제로 점주가 처리해야 하는 진행 상태
+const activeOrderStatuses = ['WAITING', 'COOKING', 'DELIVERING'];
+
+const isActiveOrder = (order) => {
+  return activeOrderStatuses.includes(order.orderStatus);
+};
+
 // 2. 검색 및 필터 로직 (확인 필요 필터 추가)
 const filteredOrders = computed(() => {
   return orders.value.filter((order) => {
@@ -56,15 +63,15 @@ const filteredOrders = computed(() => {
     let attentionMatched = true;
 
     if (selectedAttention.value === 'REQUEST') {
-      attentionMatched = riskBadges.length > 0;
+      attentionMatched = isActiveOrder(order) && riskBadges.length > 0;
     }
 
     if (selectedAttention.value === 'DELAY') {
-      attentionMatched = order.delayRiskLevel !== 'SAFE';
+      attentionMatched = isActiveOrder(order) && order.delayRiskLevel !== 'SAFE';
     }
 
     if (selectedAttention.value === 'LOSS') {
-      attentionMatched = order.lossRisk;
+      attentionMatched = isActiveOrder(order) && order.lossRisk;
     }
 
     if (selectedAttention.value === 'CANCEL') {
@@ -147,7 +154,7 @@ const operationSummary = computed(() => {
     waitingCount: orders.value.filter((o) => o.orderStatus === 'WAITING').length,
     cookingCount: orders.value.filter((o) => o.orderStatus === 'COOKING').length,
     deliveringCount: orders.value.filter((o) => o.orderStatus === 'DELIVERING').length,
-    requestRiskCount: orders.value.filter((o) => (o.riskBadges || []).length > 0).length,
+    requestRiskCount: orders.value.filter((o) => isActiveOrder(o) && (o.riskBadges || []).length > 0).length,
   };
 });
 
@@ -167,7 +174,7 @@ const statusModalTitle = computed(() => {
 
 const statusModalOrders = computed(() => {
   if (selectedSummaryType.value === 'REQUEST_RISK') {
-    return orders.value.filter((order) => (order.riskBadges || []).length > 0);
+    return orders.value.filter((order) => isActiveOrder(order) && (order.riskBadges || []).length > 0);
   }
   return orders.value.filter((order) => order.orderStatus === selectedSummaryType.value);
 });
@@ -196,7 +203,7 @@ const formatTime = (dateTime) => {
   });
 };
 
-// 선입선출 정렬 기준값
+// 최신 주문 정렬 기준값
 const getOrderSortValue = (order) => {
   const rawDateTime =
     order.orderedAtRaw ||
@@ -212,10 +219,10 @@ const getOrderSortValue = (order) => {
   return Number(order.id || 0);
 };
 
-// 오래된 주문이 위, 최근 주문이 아래로 가게 정렬
+// 최신 주문이 앞쪽 페이지, 이전 주문이 뒤쪽 페이지로 가게 정렬
 const sortFifoOrders = (orderList) => {
   return [...orderList].sort((a, b) => {
-    return getOrderSortValue(a) - getOrderSortValue(b);
+    return getOrderSortValue(b) - getOrderSortValue(a);
   });
 };
 
