@@ -22,6 +22,7 @@ const formData = reactive({
   detailAddress: '',
   industryType: '한식',
   kitchenCapacity: '',
+  minimumOrderAmount: '',
   openTime: '',
   closeTime: '',
   operationStatus: 'OPERATING'
@@ -95,7 +96,13 @@ const setBusinessNumberParts = (businessNumber) => {
 };
 
 const getBusinessNumber = () => {
-  return `${bizNumParts.part1}${bizNumParts.part2}${bizNumParts.part3}`;
+  return [
+    bizNumParts.part1,
+    bizNumParts.part2,
+    bizNumParts.part3
+  ]
+    .map((part) => String(part ?? '').replace(/\D/g, ''))
+    .join('');
 };
 
 let originalData = {};
@@ -113,6 +120,7 @@ onBeforeMount(async () => {
       formData.detailAddress = store.currentData.addressDetail || '';
       formData.industryType = store.currentData.industryType || '';
       formData.kitchenCapacity = store.currentData.kitchenCapacity || '';
+      formData.minimumOrderAmount = store.currentData.minimumOrderAmount ?? '';
       formData.openTime = store.currentData.openTime?.slice(0, 5) || '';
       formData.closeTime = store.currentData.closeTime?.slice(0, 5)  || '';
       formData.operationStatus = store.currentData.operationStatus || 'OPERATING';
@@ -127,6 +135,7 @@ onBeforeMount(async () => {
         detailAddress: formData.detailAddress,
         industryType: formData.industryType,
         kitchenCapacity: String(formData.kitchenCapacity),
+        minimumOrderAmount: String(formData.minimumOrderAmount),
         openTime: formData.openTime,
         closeTime: formData.closeTime,
         operationStatus: formData.operationStatus,
@@ -194,6 +203,12 @@ const validateStoreForm = () => {
     return false;
   }
 
+  if (formData.minimumOrderAmount === '' || Number(formData.minimumOrderAmount) < 0) {
+    alert('최소주문금액은 0 이상으로 입력해주세요.');
+    activeTab.value = 'basic';
+    return false;
+  }
+
   if (!formData.openTime) {
     alert('영업 시작 시간을 입력해주세요.');
     activeTab.value = 'basic';
@@ -246,6 +261,7 @@ const handleBasicSubmit = async () => {
     if (formData.detailAddress !== originalData.detailAddress) changedFields.addressDetail = formData.detailAddress;
     if (formData.industryType !== originalData.industryType) changedFields.industryType = formData.industryType;
     if (String(formData.kitchenCapacity) !== originalData.kitchenCapacity) changedFields.kitchenCapacity = Number(formData.kitchenCapacity);
+    if (String(formData.minimumOrderAmount) !== originalData.minimumOrderAmount) changedFields.minimumOrderAmount = Number(formData.minimumOrderAmount);
     if (currentBizNum !== originalData.businessNumber) changedFields.businessNumber = currentBizNum;
     if (formData.openTime !== originalData.openTime) changedFields.openTime = formData.openTime;
     if (formData.closeTime !== originalData.closeTime) changedFields.closeTime = formData.closeTime;
@@ -262,6 +278,7 @@ const handleBasicSubmit = async () => {
       alert('매장 정보가 성공적으로 수정되었습니다.');
       Object.assign(originalData, {...changedFields,
     kitchenCapacity: String(formData.kitchenCapacity),
+    minimumOrderAmount: String(formData.minimumOrderAmount),
       });
 
     if (changedFields.businessNumber) {
@@ -283,6 +300,7 @@ const handleBasicSubmit = async () => {
       addressDetail: formData.detailAddress,
       industryType: formData.industryType,
       kitchenCapacity: Number(formData.kitchenCapacity),
+      minimumOrderAmount: Number(formData.minimumOrderAmount),
       openTime: formData.openTime,
       closeTime: formData.closeTime,
       operationStatus: formData.operationStatus,
@@ -491,7 +509,7 @@ const handleOperationSubmit = async () => {
           <div class="input-with-btn">
             <div class="biz-num-group">
               <input
-                v-model="bizNumParts.Part1"
+                v-model="bizNumParts.part1"
                 required
                 inputmode="numeric"
                 maxlength="3"
@@ -503,7 +521,7 @@ const handleOperationSubmit = async () => {
               />
               <span class="dash">-</span>
               <input
-                v-model="bizNumParts.Part2"
+                v-model="bizNumParts.part2"
                 required
                 inputmode="numeric"
                 maxlength="2"
@@ -515,7 +533,7 @@ const handleOperationSubmit = async () => {
               >
               <span class="dash">-</span>
               <input
-                v-model="bizNumParts.Part3"
+                v-model="bizNumParts.part3"
                 required
                 inputmode="numeric"
                 maxlength="5"
@@ -542,6 +560,22 @@ const handleOperationSubmit = async () => {
             placeholder="예: 3"
             title="예: 3이면 동시에 주문 3건 정도를 처리할 수 있다는 의미입니다."
             @invalid="setInvalidMessage($event, '주방 처리량을 입력해주세요. 예: 3이면 동시에 주문 3건 정도 처리 가능하다는 의미입니다.')"
+            @input="clearInvalidMessage($event)"
+          />
+        </div>
+
+        <div class="input-group">
+          <label title="Mock 주문 생성과 배달 주문 기준에 사용할 매장 최소주문금액입니다.">
+          최소주문금액 <span>*</span>
+          </label>
+          <input
+            type="number"
+            v-model="formData.minimumOrderAmount"
+            required
+            min="0"
+            placeholder="예: 15000"
+            title="예: 15000이면 Mock 주문이 15,000원 이상으로 생성됩니다."
+            @invalid="setInvalidMessage($event, '최소주문금액을 입력해주세요. 예: 15000')"
             @input="clearInvalidMessage($event)"
           />
         </div>

@@ -181,22 +181,9 @@ router.beforeEach(async (to) => {
   }
 
   /*
-   * 로그인한 사용자가 랜딩/로그인/회원가입으로 가려고 하면
-   * Refresh Token으로 복구 후 dashboard로 보낸다.
+   * 게스트 화면에서는 Refresh Token 재발급을 시도하지 않는다.
+   * 로그인 화면 첫 진입 시 불필요한 401 reissue 요청이 보이는 문제를 막기 위함이다.
    */
-  if (
-    to.meta.isGuestOnly &&
-    !authStore.accessToken &&
-    authStore.hasLoginHint
-  ) {
-    const reissueSuccess = await authStore.reissue();
-
-    if (reissueSuccess) {
-      return {
-        name: 'dashboard',
-      };
-    }
-  }
   
   // 이미 로그인 상태면 게스트 페이지 접근 차단
   if (

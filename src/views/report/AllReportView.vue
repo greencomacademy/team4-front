@@ -1,203 +1,447 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useReportStore } from '../../stores/report/useReportStore.js';
 
 const router = useRouter();
+const route = useRoute();
+const reportStore = useReportStore();
+
+/*
+ * 날짜 input에 넣기 위한 yyyy-MM-dd 변환 함수
+ * toISOString()은 UTC 기준이라 한국 시간 새벽에는 날짜가 하루 밀릴 수 있어서 직접 만든다.
+ */
+const toDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+const todayDate = new Date();
+const sevenDaysAgo = new Date();
+sevenDaysAgo.setDate(todayDate.getDate() - 7);
+
+const today = toDateInputValue(todayDate);
+const defaultStartDate = toDateInputValue(sevenDaysAgo);
 
 // ==========================================
-// 1. 상태 관리 (탭 및 필터)
+// 1. 상태 관리
 // ==========================================
 const activeTab = ref('sales');
 
-const today = new Date().toISOString().split('T')[0];
 const filters = ref({
-  startDate: '2026-06-17',
-  endDate: '2026-06-23',
+  startDate: defaultStartDate,
+  endDate: today,
   platform: '',
   status: '',
   risk: '',
-  keyword: ''
+  keyword: '',
 });
 
 // ==========================================
-// 2. Mock 데이터 세팅 (이미지 시안 기준)
+// 2. 화면 표시용 이름 매핑
 // ==========================================
-const platformNames = { BAEMIN: '배민', COUPANG_EATS: '쿠팡이츠', YOGIYO: '요기요', DDANGYO: '땡겨요' };
-const statusNames = { WAITING: '접수대기', COOKING: '조리중', DELIVERING: '배달중', COMPLETED: '완료', CANCELED: '취소', REFUNDED: '환불' };
-const riskNames = { REQUEST: '요구사항 확인', DELAY: '지연 위험', LOSS: '손실 위험', CANCEL: '취소 이력' };
+const platformNames = {
+  BAEMIN: '배민',
+  COUPANG_EATS: '쿠팡이츠',
+  YOGIYO: '요기요',
+  DDANGYO: '땡겨요',
+};
 
-// 손실 메뉴 분석용 더미 메뉴 데이터
-const menus = ref([
-  { name: '묵은지 김치찜', price: 24500, cost: 9300, packageCost: 1040, cookingTime: 25, orderCount: 18, profitRate: 31.4 },
-  { name: '단체 도시락 세트', price: 15000, cost: 7000, packageCost: 700, cookingTime: 60, orderCount: 11, profitRate: 19.8 },
-  { name: '로제 파스타', price: 14000, cost: 5200, packageCost: 1080, cookingTime: 15, orderCount: 21, profitRate: 8.2 },
-  { name: '치킨 덮밥', price: 12000, cost: 4800, packageCost: 600, cookingTime: 18, orderCount: 24, profitRate: 27.5 },
-]);
+const statusNames = {
+  WAITING: '접수대기',
+  COOKING: '조리중',
+  DELIVERING: '배달중',
+  COMPLETED: '완료',
+  CANCELED: '취소',
+  REFUNDED: '환불',
+};
 
-const orders = ref([
-  {
-    orderDate: '2026-06-23', orderNo: 'ORD-00004', platformOrderNo: 'D-2901', platformType: 'DDANGYO', 
-    menuSummary: '모듬 세트', orderStatus: 'COMPLETED', totalAmount: 76000, netProfit: 28400,
-    commissionAmount: 4560, deliveryFeeAmount: 2500, couponAmount: 2000, menuCostAmount: 35000, packagingAmount: 3540,
-    completedAt: '12:28', cancelReason: '', riskBadges: [], lossRisk: false
-  },
-  {
-    orderDate: '2026-06-22', orderNo: 'ORD-90001', platformOrderNo: 'B-9017', platformType: 'BAEMIN', 
-    menuSummary: '묵은지 김치찜', orderStatus: 'COMPLETED', totalAmount: 24500, netProfit: 9200,
-    commissionAmount: 1960, deliveryFeeAmount: 2000, couponAmount: 1000, menuCostAmount: 9300, packagingAmount: 1040,
-    completedAt: '19:13', cancelReason: '', riskBadges: [], lossRisk: false
-  },
-  {
-    orderDate: '2026-06-21', orderNo: 'ORD-90002', platformOrderNo: 'C-6132', platformType: 'COUPANG_EATS', 
-    menuSummary: '단체 도시락 세트', orderStatus: 'CANCELED', totalAmount: 90000, netProfit: 0,
-    commissionAmount: 7200, deliveryFeeAmount: 4500, couponAmount: 3000, menuCostAmount: 42000, packagingAmount: 4200,
-    canceledAt: '12:15', cancelReason: '고객 요청 · 회의 일정 변경으로 고객이 취소를 요청했습니다.', riskBadges: ['배달 전달 주의'], lossRisk: false
-  },
-  {
-    orderDate: '2026-06-20', orderNo: 'ORD-90003', platformOrderNo: 'Y-3842', platformType: 'YOGIYO', 
-    menuSummary: '로제 파스타 세트', orderStatus: 'COMPLETED', totalAmount: 28000, netProfit: 1800,
-    commissionAmount: 2240, deliveryFeeAmount: 2500, couponAmount: 2000, menuCostAmount: 10400, packagingAmount: 2160,
-    completedAt: '19:48', cancelReason: '', riskBadges: ['과도 요청'], lossRisk: true
-  },
-  {
-    orderDate: '2026-06-23', orderNo: 'ORD-00006', platformOrderNo: 'Y-9281', platformType: 'YOGIYO', 
-    menuSummary: '치즈 돈까스 세트', orderStatus: 'CANCELED', totalAmount: 18500, netProfit: 0,
-    commissionAmount: 1570, deliveryFeeAmount: 2800, couponAmount: 1000, menuCostAmount: 8200, packagingAmount: 750,
-    canceledAt: '12:19', cancelReason: '재료 소진 · 치즈 재고 부족으로 점주가 취소 처리했습니다.', riskBadges: [], lossRisk: false
-  }
-]);
+const riskNames = {
+  REQUEST: '요구사항 확인',
+  LOSS: '손실 위험',
+  CANCEL: '취소 이력',
+  REFUND: '환불 이력',
+};
+
+const cancelTypeNames = {
+  CUSTOMER_REQUEST: '고객 요청',
+  OUT_OF_STOCK: '재료 소진',
+  COOKING_DELAY: '조리 지연',
+  REQUEST_UNAVAILABLE: '요구사항 처리 불가',
+  DELIVERY_ISSUE: '배달 문제',
+  ETC: '기타',
+};
+
+const refundTypeNames = {
+  CUSTOMER_REQUEST: '고객 요청',
+  FOOD_ISSUE: '음식 문제',
+  DELIVERY_ISSUE: '배달 문제',
+  STORE_MISTAKE: '매장 실수',
+  PLATFORM_POLICY: '플랫폼 정책',
+  ETC: '기타',
+};
+
+const reasonTypeLabels = [
+  '고객 요청',
+  '재료 소진',
+  '조리 지연',
+  '요구사항 처리 불가',
+  '배달 문제',
+  '음식 문제',
+  '매장 실수',
+  '플랫폼 정책',
+  '기타',
+];
 
 // ==========================================
-// 3. Computed (필터링 및 요약 연산)
+// 3. Store 데이터 연결
 // ==========================================
-const formatMoney = (val) => `${Number(val || 0).toLocaleString('ko-KR')}원`;
+const orders = computed(() => reportStore.reportOrders);
 
-// 전체 필터 적용 로직
 const filteredOrders = computed(() => {
-  const { startDate, endDate, platform, status, risk, keyword } = filters.value;
-  const lowerKeyword = keyword.trim().toLowerCase();
+  return orders.value;
+});
 
-  return orders.value.filter(order => {
-    const dateMatched = (!startDate || order.orderDate >= startDate) && (!endDate || order.orderDate <= endDate);
-    const platformMatched = !platform || order.platformType === platform;
-    const statusMatched = !status || order.orderStatus === status;
-    const keywordMatched = !lowerKeyword ||
-      order.orderNo.toLowerCase().includes(lowerKeyword) ||
-      order.platformOrderNo.toLowerCase().includes(lowerKeyword) ||
-      order.menuSummary.toLowerCase().includes(lowerKeyword) ||
-      (order.cancelReason || '').toLowerCase().includes(lowerKeyword);
-
-    let riskMatched = true;
-    if (risk === 'REQUEST') riskMatched = order.riskBadges.length > 0;
-    if (risk === 'LOSS') riskMatched = order.lossRisk;
-    if (risk === 'CANCEL') riskMatched = order.orderStatus === 'CANCELED';
-
-    return dateMatched && platformMatched && statusMatched && keywordMatched && riskMatched;
+const salesOrders = computed(() => {
+  return filteredOrders.value.filter((order) => {
+    return order.orderStatus === 'COMPLETED';
   });
 });
 
-const salesOrders = computed(() => filteredOrders.value.filter(o => o.orderStatus === 'COMPLETED'));
-const cancelOrders = computed(() => filteredOrders.value.filter(o => o.orderStatus === 'CANCELED'));
+const cancelOrders = computed(() => {
+  return filteredOrders.value.filter((order) => {
+    return order.orderStatus === 'CANCELED';
+  });
+});
 
-// 상단 매출/취소 카드 요약
+const refundOrders = computed(() => {
+  return filteredOrders.value.filter((order) => {
+    return order.orderStatus === 'REFUNDED';
+  });
+});
+
+const historyOrders = computed(() => {
+  return filteredOrders.value.filter((order) => {
+    return order.orderStatus === 'CANCELED' ||
+      order.orderStatus === 'REFUNDED';
+  });
+});
+
+const previewOrders = computed(() => {
+  return filteredOrders.value.slice(0, 5);
+});
+
+const hiddenPreviewCount = computed(() => {
+  const hiddenCount = filteredOrders.value.length - previewOrders.value.length;
+
+  return hiddenCount > 0 ? hiddenCount : 0;
+});
+
+// ==========================================
+// 4. 요약 계산
+// ==========================================
+const formatMoney = (value) => {
+  return `${Number(value || 0).toLocaleString('ko-KR')} 원`;
+};
+
 const summaryStats = computed(() => {
   const completed = salesOrders.value;
   const canceled = cancelOrders.value;
-  const totalSales = completed.reduce((sum, o) => sum + o.totalAmount, 0);
-  const totalProfit = completed.reduce((sum, o) => sum + o.netProfit, 0);
-  const cancelRate = filteredOrders.value.length ? Math.round((canceled.length / filteredOrders.value.length) * 1000) / 10 : 0;
-  
-  return { 
-    totalSales, 
-    totalProfit, 
-    cancelCount: canceled.length, 
-    cancelRate, 
+  const refunded = refundOrders.value;
+
+  const totalSales = completed.reduce((sum, order) => {
+    return sum + Number(order.totalAmount || 0);
+  }, 0);
+
+  const totalProfit = completed.reduce((sum, order) => {
+    return sum + Number(order.netProfit || 0);
+  }, 0);
+
+  const closedCount = canceled.length + refunded.length;
+
+  const closedRate = filteredOrders.value.length
+    ? Math.round((closedCount / filteredOrders.value.length) * 1000) / 10
+    : 0;
+
+  return {
+    totalSales,
+    totalProfit,
+    cancelCount: canceled.length,
+    refundCount: refunded.length,
+    closedCount,
+    closedRate,
     totalCount: filteredOrders.value.length,
-    completedCount: completed.length
+    completedCount: completed.length,
   };
 });
 
-// 취소 유형 통계
-const cancelTypeSummary = computed(() => {
-  return cancelOrders.value.reduce((acc, order) => {
-    const key = order.cancelReason ? order.cancelReason.split('·')[0].trim() : '기타';
+const historyTypeSummary = computed(() => {
+  return historyOrders.value.reduce((acc, order) => {
+    const category = getHistoryCategory(order);
+    const key = `${statusNames[order.orderStatus]} · ${category}`;
+
     acc[key] = (acc[key] || 0) + 1;
+
     return acc;
   }, {});
 });
 
-// 플랫폼 정산 통계
 const platformStats = computed(() => {
-  return Object.keys(platformNames).map(platform => {
-    const pOrders = filteredOrders.value.filter(o => o.platformType === platform);
-    const pCompleted = pOrders.filter(o => o.orderStatus === 'COMPLETED');
-    const pCanceled = pOrders.filter(o => o.orderStatus === 'CANCELED');
-    const sales = pCompleted.reduce((sum, o) => sum + o.totalAmount, 0);
-    const profit = pCompleted.reduce((sum, o) => sum + o.netProfit, 0);
-    const cancelRate = pOrders.length ? Math.round((pCanceled.length / pOrders.length) * 1000) / 10 : 0;
-    
-    return { 
-      name: platformNames[platform], 
-      total: pOrders.length, 
-      completed: pCompleted.length, 
-      canceled: pCanceled.length, 
-      cancelRate, 
-      sales, 
-      profit 
+  return Object.keys(platformNames).map((platform) => {
+    const platformOrders = filteredOrders.value.filter((order) => {
+      return order.platformType === platform;
+    });
+
+    const completed = platformOrders.filter((order) => {
+      return order.orderStatus === 'COMPLETED';
+    });
+
+    const canceled = platformOrders.filter((order) => {
+      return order.orderStatus === 'CANCELED';
+    });
+
+    const refunded = platformOrders.filter((order) => {
+      return order.orderStatus === 'REFUNDED';
+    });
+
+    const sales = completed.reduce((sum, order) => {
+      return sum + Number(order.totalAmount || 0);
+    }, 0);
+
+    const profit = completed.reduce((sum, order) => {
+      return sum + Number(order.netProfit || 0);
+    }, 0);
+
+    const closedRate = platformOrders.length
+      ? Math.round(((canceled.length + refunded.length) / platformOrders.length) * 1000) / 10
+      : 0;
+
+    return {
+      platformType: platform,
+      name: platformNames[platform],
+      total: platformOrders.length,
+      completed: completed.length,
+      canceled: canceled.length,
+      refunded: refunded.length,
+      closedRate,
+      sales,
+      profit,
     };
   });
 });
 
-// 손실 메뉴 분석 로직
-const analyzedLossMenus = computed(() => {
-  return menus.value.map(menu => {
-    const costRate = Math.round((menu.cost / menu.price) * 1000) / 10;
-    const packageRate = Math.round((menu.packageCost / menu.price) * 1000) / 10;
-    
-    const reasons = [];
-    if (menu.profitRate < 12) reasons.push(`예상 순수익률이 ${menu.profitRate}%로 낮습니다.`);
-    if (costRate >= 35) reasons.push(`원가 비중이 ${costRate}%로 높습니다.`);
-    if (packageRate >= 7) reasons.push(`포장비 비중이 ${packageRate}%입니다.`);
-    if (menu.orderCount >= 20 && menu.profitRate < 15) reasons.push('주문 수가 많아 낮은 마진이 누적될 가능성이 큽니다.');
-
-    const actions = [];
-    if (costRate >= 35) actions.push('원재료 원가 또는 판매가 재검토');
-    if (packageRate >= 7) actions.push('포장비가 높은 메뉴는 묶음 주문 유도');
-    if (menu.profitRate < 10) actions.push('쿠폰 부담금 적용 여부 확인');
-
-    return { ...menu, costRate, packageRate, reasons, actions };
-  }).filter(m => m.profitRate < 12 || (m.orderCount >= 20 && m.profitRate < 15));
-});
-
-// 필터 안내 문구
 const filterSummaryText = computed(() => {
-  const f = filters.value;
-  const pName = f.platform ? platformNames[f.platform] : '전체 플랫폼';
-  const sName = f.status ? statusNames[f.status] : '전체 상태';
-  const rName = f.risk ? riskNames[f.risk] : '전체 위험/확인';
-  const kw = f.keyword.trim() ? `검색어 '${f.keyword.trim()}'` : '검색어 없음';
-  return `기간 ${f.startDate || '전체'} ~ ${f.endDate || '전체'} · ${pName} · ${sName} · ${rName} · ${kw}`;
+  const currentFilters = filters.value;
+
+  const platformName = currentFilters.platform
+    ? platformNames[currentFilters.platform]
+    : '전체 플랫폼';
+
+  const statusName = currentFilters.status
+    ? statusNames[currentFilters.status]
+    : '전체 상태';
+
+  const riskName = currentFilters.risk
+    ? riskNames[currentFilters.risk]
+    : '전체 위험/확인';
+
+  const keywordText = currentFilters.keyword.trim()
+    ? `검색어 '${currentFilters.keyword.trim()}'`
+    : '검색어 없음';
+
+  return `기간 ${currentFilters.startDate || '전체'} ~ ${currentFilters.endDate || '전체'} · ${platformName} · ${statusName} · ${riskName} · ${keywordText}`;
 });
 
+const applyRouteQueryToReport = () => {
+  const query = route.query;
+
+  const requestedTab = String(query.tab || '');
+  const availableTabs = ['sales', 'cancel', 'platform', 'export'];
+
+  if (availableTabs.includes(requestedTab)) {
+    activeTab.value = requestedTab;
+  }
+
+  if (query.status) {
+    filters.value.status = String(query.status);
+  }
+
+  if (query.platform) {
+    filters.value.platform = String(query.platform);
+  }
+
+  if (query.keyword) {
+    filters.value.keyword = String(query.keyword);
+  }
+};
+
 // ==========================================
-// 4. 유틸리티 함수
+// 5. API 호출 함수
 // ==========================================
-const getPlatformClass = (type) => ({ BAEMIN: 'baemin', COUPANG_EATS: 'coupang', YOGIYO: 'yogiyo', DDANGYO: 'ddangyo' }[type] || 'default');
-
-const clearFilters = () => {
-  filters.value = { startDate: '2026-06-17', endDate: today, platform: '', status: '', risk: '', keyword: '' };
+const searchReports = async () => {
+  await reportStore.findOrders(filters.value);
 };
 
-const getCancelCategory = (reason) => reason ? reason.split('·')[0].trim() : '-';
-const getCancelDetail = (reason) => reason && reason.includes('·') ? reason.split('·').slice(1).join('·').trim() : reason || '-';
+const clearFilters = async () => {
+  filters.value = {
+    startDate: defaultStartDate,
+    endDate: today,
+    platform: '',
+    status: '',
+    risk: '',
+    keyword: '',
+  };
 
-const exportExcel = (type) => {
-  alert(`${type} 데이터를 엑셀로 내보냅니다. (Mock)`);
+  await searchReports();
 };
 
-const goToMenuManagement = () => {
-  router.push('/menus');
+const exportExcel = async (type = '전체') => {
+  const exportFilters = {
+    ...filters.value,
+  };
+
+  /*
+   * 각 탭의 내보내기는 현재 필터를 기본으로 하되,
+   * 매출/취소/환불 버튼은 상태 조건을 자동으로 덮어쓴다.
+   */
+  if (type === '매출') {
+    exportFilters.status = 'COMPLETED';
+  }
+
+  if (type === '취소') {
+    exportFilters.status = 'CANCELED';
+  }
+
+  if (type === '환불') {
+    exportFilters.status = 'REFUNDED';
+  }
+
+  await reportStore.downloadOrdersCsv(exportFilters);
 };
+
+// ==========================================
+// 6. 화면 유틸 함수
+// ==========================================
+const getPlatformClass = (type) => {
+  return {
+    BAEMIN: 'baemin',
+    COUPANG_EATS: 'coupang',
+    YOGIYO: 'yogiyo',
+    DDANGYO: 'ddangyo',
+  }[type] || 'default';
+};
+
+const getHistoryBadgeClass = (status) => {
+  if (status === 'COMPLETED') {
+    return 'status-completed';
+  }
+
+  if (status === 'REFUNDED') {
+    return 'status-refunded';
+  }
+
+  if (status === 'CANCELED') {
+    return 'status-canceled';
+  }
+
+  return 'status-default';
+};
+
+const normalizeReasonType = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const text = String(value).trim();
+
+  if (cancelTypeNames[text]) {
+    return cancelTypeNames[text];
+  }
+
+  if (refundTypeNames[text]) {
+    return refundTypeNames[text];
+  }
+
+  const matchedLabel = reasonTypeLabels.find((label) => {
+    return text === label || text.startsWith(`${label}으로`) || text.startsWith(`${label}로`);
+  });
+
+  if (matchedLabel) {
+    return matchedLabel;
+  }
+
+  if (text.includes('·')) {
+    return text.split('·')[0].trim();
+  }
+
+  return '';
+};
+
+const getHistoryCategory = (order) => {
+  if (order.orderStatus === 'REFUNDED') {
+    return refundTypeNames[order.refundType] ||
+      normalizeReasonType(order.refundType) ||
+      normalizeReasonType(order.refundReason) ||
+      '기타';
+  }
+
+  return cancelTypeNames[order.cancelType] ||
+    normalizeReasonType(order.cancelType) ||
+    normalizeReasonType(order.cancelReason) ||
+    '기타';
+};
+
+const getHistoryDetail = (order) => {
+  if (order.orderStatus === 'REFUNDED') {
+    return order.refundReason || '-';
+  }
+
+  return getCancelDetail(order.cancelReason);
+};
+
+const getHistoryAt = (order) => {
+  if (order.orderStatus === 'REFUNDED') {
+    return order.refundedAt || '-';
+  }
+
+  return order.canceledAt || '-';
+};
+
+const getCancelCategory = (reason) => {
+  return normalizeReasonType(reason) || '기타';
+};
+
+const getPreviewHistoryText = (order) => {
+  if (order.orderStatus === 'CANCELED') {
+    return order.cancelReason || order.cancelType || '-';
+  }
+
+  if (order.orderStatus === 'REFUNDED') {
+    return order.refundReason || order.refundType || '-';
+  }
+
+  return '-';
+};
+
+const getCancelDetail = (reason) => {
+  if (!reason) {
+    return '-';
+  }
+
+  if (!reason.includes('·')) {
+    return reason;
+  }
+
+  return reason.split('·').slice(1).join('·').trim();
+};
+
+onMounted(() => {
+  applyRouteQueryToReport();
+  searchReports();
+});
 </script>
 
 <template>
@@ -206,19 +450,18 @@ const goToMenuManagement = () => {
       <div>
         <span class="category-text">OPERATION REPORT</span>
         <h1>운영 리포트</h1>
-        <p class="header-desc">매출, 취소, 플랫폼 정산, 손실 메뉴를 날짜와 조건별로 확인하고 파일로 내보냅니다.</p>
+        <p class="header-desc">매출, 취소, 플랫폼 정산을 날짜와 조건별로 확인하고 파일로 내보냅니다.</p>
       </div>
       <div class="header-actions">
-        <button type="button" class="sub-button" @click="activeTab = 'cancel'">취소 리포트</button>
+        <button type="button" class="sub-button" @click="activeTab = 'cancel'">취소/환불 리포트</button>
         <button type="button" class="primary-button" @click="activeTab = 'export'">필터/엑셀 내보내기</button>
       </div>
     </header>
 
     <div class="tabs-mock report-tabs report-tabs-under-title">
       <button class="tab" :class="{ active: activeTab === 'sales' }" @click="activeTab = 'sales'">매출 리포트</button>
-      <button class="tab" :class="{ active: activeTab === 'cancel' }" @click="activeTab = 'cancel'">취소 리포트</button>
+      <button class="tab" :class="{ active: activeTab === 'cancel' }" @click="activeTab = 'cancel'">취소/환불 리포트</button>
       <button class="tab" :class="{ active: activeTab === 'platform' }" @click="activeTab = 'platform'">플랫폼별 정산 요약</button>
-      <button class="tab" :class="{ active: activeTab === 'loss' }" @click="activeTab = 'loss'">손실 메뉴 분석</button>
       <button class="tab" :class="{ active: activeTab === 'export' }" @click="activeTab = 'export'">필터/엑셀 내보내기</button>
     </div>
 
@@ -256,113 +499,172 @@ const goToMenuManagement = () => {
 
       <div class="table-scroll">
         <table class="data-table">
-          <thead>
-            <tr>
-              <th>날짜</th>
-              <th>플랫폼 주문번호</th>
-              <th>플랫폼</th>
-              <th>메뉴</th>
-              <th>주문금액</th>
-              <th>수수료</th>
-              <th>배달비</th>
-              <th>쿠폰</th>
-              <th>예상 순수익</th>
-              <th>완료시각</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="order in salesOrders" :key="order.orderNo">
-              <td class="text-muted">{{ order.orderDate }}</td>
-              <td>
-                <strong class="order-no-main">{{ order.platformOrderNo }}</strong>
-                <small class="order-no-sub">관리번호 {{ order.orderNo }}</small>
-              </td>
-              <td>
-                <span class="platform-badge" :class="getPlatformClass(order.platformType)">
-                  {{ platformNames[order.platformType] }}
-                </span>
-              </td>
-              <td class="text-main">{{ order.menuSummary }}</td>
-              <td class="text-muted">{{ formatMoney(order.totalAmount) }}</td>
-              <td class="text-muted">{{ formatMoney(order.commissionAmount) }}</td>
-              <td class="text-muted">{{ formatMoney(order.deliveryFeeAmount) }}</td>
-              <td class="text-muted">{{ formatMoney(order.couponAmount) }}</td>
-              <td><strong class="profit-strong">{{ formatMoney(order.netProfit) }}</strong></td>
-              <td class="text-muted">{{ order.completedAt }}</td>
-            </tr>
-            <tr v-if="salesOrders.length === 0">
-              <td colspan="10" class="empty-message">조건에 맞는 완료 주문이 없습니다.</td>
-            </tr>
-          </tbody>
+         <thead>
+          <tr>
+            <th>날짜</th>
+            <th>플랫폼 주문번호</th>
+            <th>플랫폼</th>
+            <th>메뉴</th>
+            <th>주문금액</th>
+            <th>플랫폼 수수료</th>
+            <th>배달비 부담</th>
+            <th>쿠폰 부담</th>
+            <th>플랫폼 지원금</th>
+            <th>메뉴 원가</th>
+            <th>포장비</th>
+            <th>예상 순수익</th>
+            <th>완료일시</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="order in salesOrders" :key="order.orderNo">
+            <td class="text-muted cancel-date-cell">{{ order.orderDate }}</td>
+            <td class="cancel-status-cell">
+              <strong class="order-no-main">{{ order.platformOrderNo }}</strong>
+            </td>
+            <td>
+              <span class="platform-badge" :class="getPlatformClass(order.platformType)">
+                {{ platformNames[order.platformType] }}
+              </span>
+            </td>
+            <td class="text-main">{{ order.menuSummary }}</td>
+            <td class="text-muted">{{ formatMoney(order.totalAmount) }}</td>
+            <td class="text-muted">{{ formatMoney(order.commissionAmount) }}</td>
+            <td class="text-muted">{{ formatMoney(order.deliveryFeeAmount) }}</td>
+            <td class="text-muted">{{ formatMoney(order.couponAmount) }}</td>
+            <td class="text-muted">{{ formatMoney(order.platformSupportAmount) }}</td>
+            <td class="text-muted">{{ formatMoney(order.menuCostAmount) }}</td>
+            <td class="text-muted">{{ formatMoney(order.packagingAmount) }}</td>
+            <td>
+              <strong class="profit-strong">{{ formatMoney(order.netProfit) }}</strong>
+            </td>
+            <td class="text-muted">{{ order.completedAt || '-' }}</td>
+          </tr>
+          <tr v-if="salesOrders.length === 0">
+            <td colspan="13" class="empty-message">
+              조건에 맞는 완료 주문이 없습니다.
+            </td>
+          </tr>
+        </tbody>
         </table>
       </div>
     </article>
 
-    <section v-if="activeTab === 'cancel'" class="grid-12 report-cancel-layout">
-      <article class="card col-4 cancel-summary-card">
-        <div class="card-header">
-          <div class="title-area">
-            <h2>취소 사유 요약</h2>
-            <p class="required-note">취소 유형별 건수</p>
-          </div>
-        </div>
-        <div class="cancel-type-list">
-          <div v-for="(count, type) in cancelTypeSummary" :key="type">
-            <span>{{ type }}</span><strong>{{ count }}건</strong>
-          </div>
-          <div v-if="Object.keys(cancelTypeSummary).length === 0">
-            <span>취소 이력 없음</span><strong>0건</strong>
-          </div>
-        </div>
-        <div class="info-banner">어떤 이유로 매출 손실이 발생했는지 빠르게 확인할 수 있습니다.</div>
-      </article>
+   <section v-if="activeTab === 'cancel'" class="grid-12 report-cancel-layout">
+  <article class="card col-4 cancel-summary-card">
+    <div class="card-header">
+      <div class="title-area">
+        <h2>취소/환불 유형 요약</h2>
+        <p class="required-note">취소와 환불 유형별 건수</p>
+      </div>
+    </div>
 
-      <article class="card col-8 report-card">
-        <div class="card-header">
-          <div class="title-area">
-            <h2>취소 이력 모음</h2>
-            <p class="required-note">주문 상세에 흩어진 취소 이력을 한 곳에서 확인합니다.</p>
-          </div>
-          <button class="primary-button" @click="exportExcel('취소')">취소 내보내기</button>
-        </div>
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>날짜</th>
-                <th>플랫폼 주문번호</th>
-                <th>플랫폼</th>
-                <th>메뉴</th>
-                <th>취소유형</th>
-                <th>상세사유</th>
-                <th>취소시각</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="order in cancelOrders" :key="order.orderNo">
-                <td class="text-muted">{{ order.orderDate }}</td>
-                <td>
-                  <strong class="order-no-main">{{ order.platformOrderNo }}</strong>
-                  <small class="order-no-sub">관리번호 {{ order.orderNo }}</small>
-                </td>
-                <td>
-                  <span class="platform-badge" :class="getPlatformClass(order.platformType)">
-                    {{ platformNames[order.platformType] }}
-                  </span>
-                </td>
-                <td class="text-main">{{ order.menuSummary }}</td>
-                <td><span class="status-badge status-canceled">{{ getCancelCategory(order.cancelReason) }}</span></td>
-                <td class="text-main cancel-reason-text">{{ getCancelDetail(order.cancelReason) }}</td>
-                <td class="text-muted">{{ order.canceledAt }}</td>
-              </tr>
-              <tr v-if="cancelOrders.length === 0">
-                <td colspan="7" class="empty-message">조건에 맞는 취소 이력이 없습니다.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </article>
-    </section>
+    <div class="cancel-type-list">
+      <div v-for="(count, type) in historyTypeSummary" :key="type">
+        <span>{{ type }}</span>
+        <strong>{{ count }}건</strong>
+      </div>
+
+      <div v-if="Object.keys(historyTypeSummary).length === 0">
+        <span>취소/환불 이력 없음</span>
+        <strong>0건</strong>
+      </div>
+    </div>
+
+    <div class="info-banner">
+      완료 이후 문제가 생긴 주문은 취소가 아니라 환불 이력으로 분리해 확인합니다.
+    </div>
+  </article>
+
+  <article class="card col-8 report-card">
+    <div class="card-header">
+      <div class="title-area">
+        <h2>취소/환불 이력 모음</h2>
+        <p class="required-note">
+          취소일시, 환불일시, 유형, 상세 사유를 한 곳에서 확인합니다.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button class="sub-button" @click="exportExcel('취소')">
+          취소 CSV
+        </button>
+        <button class="primary-button" @click="exportExcel('환불')">
+          환불 CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="table-scroll cancel-history-scroll">
+      <table class="data-table cancel-history-table">
+        <colgroup>
+          <col class="cancel-col-date">
+          <col class="cancel-col-status">
+          <col class="cancel-col-order-no">
+          <col class="cancel-col-platform">
+          <col class="cancel-col-menu">
+          <col class="cancel-col-type">
+          <col class="cancel-col-reason">
+          <col class="cancel-col-processed-at">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>날짜</th>
+            <th>상태</th>
+            <th>플랫폼 주문번호</th>
+            <th>플랫폼</th>
+            <th>메뉴</th>
+            <th>유형</th>
+            <th>상세사유</th>
+            <th>처리일시</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="order in historyOrders" :key="order.orderNo">
+            <td class="text-muted">{{ order.orderDate }}</td>
+            <td>
+              <span
+                class="status-badge"
+                :class="getHistoryBadgeClass(order.orderStatus)"
+              >
+                {{ statusNames[order.orderStatus] }}
+              </span>
+            </td>
+            <td class="cancel-order-no-cell">
+              <strong class="order-no-main">{{ order.platformOrderNo }}</strong>
+            </td>
+            <td class="cancel-platform-cell">
+              <span class="platform-badge" :class="getPlatformClass(order.platformType)">
+                {{ platformNames[order.platformType] }}
+              </span>
+            </td>
+            <td class="text-main cancel-menu-cell">{{ order.menuSummary }}</td>
+            <td class="cancel-type-cell">
+              <span
+                class="status-badge cancel-type-badge"
+                :class="getHistoryBadgeClass(order.orderStatus)"
+              >
+                {{ getHistoryCategory(order) }}
+              </span>
+            </td>
+            <td class="text-main cancel-reason-text">
+              {{ getHistoryDetail(order) }}
+            </td>
+            <td class="text-muted cancel-processed-at-cell">
+              {{ getHistoryAt(order) }}
+            </td>
+          </tr>
+
+          <tr v-if="historyOrders.length === 0">
+            <td colspan="8" class="empty-message">
+              조건에 맞는 취소/환불 이력이 없습니다.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
 
     <article v-if="activeTab === 'platform'" class="card report-card">
       <div class="card-header">
@@ -380,77 +682,62 @@ const goToMenuManagement = () => {
               <th>전체 주문</th>
               <th>완료 주문</th>
               <th>취소 주문</th>
-              <th>취소율</th>
+              <th>환불 주문</th>
+              <th>취소/환불률</th>
               <th>완료 매출</th>
               <th>예상 순수익</th>
             </tr>
-          </thead>
-          <tbody>
-            <tr v-for="stat in platformStats" :key="stat.name">
+            </thead>
+            <tbody>
+            <tr v-for="stat in platformStats" :key="stat.platformType">
               <td>
-                <span class="platform-badge default">
+                <span class="platform-badge" :class="getPlatformClass(stat.platformType)">
                   {{ stat.name }}
                 </span>
               </td>
               <td><strong class="order-no-main">{{ stat.total }}건</strong></td>
               <td><strong class="order-no-main">{{ stat.completed }}건</strong></td>
               <td><strong class="order-no-main">{{ stat.canceled }}건</strong></td>
-              <td><span class="text-main">{{ stat.cancelRate }}%</span></td>
+              <td><strong class="order-no-main">{{ stat.refunded }}건</strong></td>
+              <td><span class="text-main">{{ stat.closedRate }}%</span></td>
               <td>{{ formatMoney(stat.sales) }}</td>
               <td><strong class="profit-strong">{{ formatMoney(stat.profit) }}</strong></td>
             </tr>
-          </tbody>
+            </tbody>
         </table>
-      </div>
-    </article>
-
-    <article v-if="activeTab === 'loss'" class="card report-card">
-      <div class="card-header">
-        <div class="title-area">
-          <h2>손실 메뉴 분석</h2>
-          <p class="required-note">손실 위험 메뉴를 리포트에서 자세히 확인합니다.</p>
-        </div>
-        <button class="primary-button" @click="goToMenuManagement">메뉴 수익 관리로 이동</button>
-      </div>
-      
-      <div class="info-banner">판정 기준: 주문 수가 많으면서 순수익률이 낮거나, 원가·포장비·플랫폼 비용 비중이 높은 메뉴를 우선 확인 대상으로 봅니다.</div>
-      
-      <div class="loss-menu-grid">
-        <article v-for="(menu, idx) in analyzedLossMenus" :key="idx" class="loss-menu-card" :class="{ danger: menu.profitRate < 12 }">
-          <span>{{ menu.orderCount > 20 ? '주문 많음' : '저마진' }}</span>
-          <h3>{{ menu.name }}</h3>
-          <strong>{{ menu.profitRate }}%</strong>
-          
-          <div class="loss-reason-list">
-            <p v-for="(reason, rIdx) in menu.reasons" :key="rIdx">• {{ reason }}</p>
-          </div>
-          
-          <div class="loss-action-list">
-            <b>추천 조치</b>
-            <p v-for="(action, aIdx) in menu.actions" :key="aIdx">→ {{ action }}</p>
-          </div>
-          
-          <div class="loss-metric-row">
-            <small>판매가 {{ formatMoney(menu.price) }}</small>
-            <small>원가율 {{ menu.costRate }}%</small>
-            <small>포장비율 {{ menu.packageRate }}%</small>
-          </div>
-        </article>
-        <div v-if="analyzedLossMenus.length === 0" class="empty-message" style="grid-column: span 4;">
-          현재 숨은 손실 메뉴가 없습니다. 안정적으로 운영 중입니다.
-        </div>
       </div>
     </article>
 
     <section v-if="activeTab === 'export'" class="report-filter-export-layout">
       <section class="card">
         <div class="card-header border-bottom">
-          <div class="title-area">
-            <h2>필터 설정</h2>
-            <p class="required-note">조건을 잡은 뒤, 같은 조건으로 화면 조회와 엑셀 내보내기를 진행합니다.</p>
-          </div>
-          <button type="button" class="sub-button" @click="clearFilters">필터 초기화</button>
+      <div class="title-area">
+        <h2>필터 설정</h2>
+        <p class="required-note">
+          조건을 잡은 뒤, 같은 조건으로 화면 조회와 CSV 내보내기를 진행합니다.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button
+          type="button"
+          class="sub-button"
+          @click="clearFilters"
+          :disabled="reportStore.isLoading"
+        >
+          필터 초기화
+        </button>
+
+        <button
+          type="button"
+          class="primary-button"
+          @click="searchReports"
+          :disabled="reportStore.isLoading"
+        >
+          {{ reportStore.isLoading ? '조회 중...' : '조회' }}
+          </button>
         </div>
+      </div>
         
         <div class="report-filter-grid">
           <div class="filter-group">
@@ -461,7 +748,7 @@ const goToMenuManagement = () => {
             <label>종료일</label>
             <input type="date" v-model="filters.endDate">
           </div>
-          <div class="filter-group">
+          <div class="filter-group compact">
             <label>플랫폼</label>
             <select v-model="filters.platform">
               <option value="">전체</option>
@@ -471,37 +758,136 @@ const goToMenuManagement = () => {
               <option value="DDANGYO">땡겨요</option>
             </select>
           </div>
-          <div class="filter-group">
+          <div class="filter-group compact">
             <label>상태</label>
             <select v-model="filters.status">
               <option value="">전체</option>
               <option value="COMPLETED">완료</option>
               <option value="CANCELED">취소</option>
+              <option value="REFUNDED">환불</option>
             </select>
           </div>
-          <div class="filter-group">
+          <div class="filter-group compact">
             <label>위험/확인</label>
             <select v-model="filters.risk">
               <option value="">전체</option>
               <option value="REQUEST">요구사항 확인</option>
               <option value="LOSS">손실 위험</option>
               <option value="CANCEL">취소 이력</option>
+              <option value="REFUND">환불 이력</option>
             </select>
           </div>
-          <div class="filter-group wide">
+          <div class="filter-group wide keyword-filter">
             <label>검색어</label>
-            <input type="text" v-model="filters.keyword" placeholder="주문번호, 메뉴, 주소, 요구사항, 취소사유 검색">
+            <input type="text" v-model="filters.keyword" placeholder="주문번호, 메뉴, 주소, 요구사항, 취소/환불 사유 검색">
           </div>
         </div>
         
         <div class="filter-result-line">
-          현재 조건에 맞는 주문 <strong>{{ filteredOrders.length }}건</strong> · 
-          완료 {{ salesOrders.length }}건 · 취소 {{ cancelOrders.length }}건 · 주문 이력 저장기한 90일
+          현재 조건에 맞는 주문 <strong>{{ filteredOrders.length }}건</strong> ·
+          완료 {{ salesOrders.length }}건 ·
+          취소 {{ cancelOrders.length }}건 ·
+          환불 {{ refundOrders.length }}건
         </div>
+        <div class="export-preview-box">
+        <div class="export-preview-header">
+          <div>
+            <h3>CSV 내보내기 미리보기</h3>
+            <p>
+              현재 필터 조건으로 조회된 주문 중 최대 5건을 먼저 보여줍니다.
+            </p>
+          </div>
+
+          <span>
+            총 {{ filteredOrders.length }}건
+            <template v-if="hiddenPreviewCount > 0">
+              · 외 {{ hiddenPreviewCount }}건
+            </template>
+          </span>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table preview-table">
+            <thead>
+              <tr>
+                <th>날짜</th>
+                <th>상태</th>
+                <th>플랫폼 주문번호</th>
+                <th>플랫폼</th>
+                <th>메뉴</th>
+                <th>주문금액</th>
+                <th>예상 순수익</th>
+                <th>취소/환불 사유</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr v-for="order in previewOrders" :key="order.orderNo">
+                <td class="text-muted">{{ order.orderDate || '-' }}</td>
+
+                <td>
+                  <span
+                    class="status-badge"
+                    :class="getHistoryBadgeClass(order.orderStatus)"
+                  >
+                    {{ statusNames[order.orderStatus] || order.orderStatus }}
+                  </span>
+                </td>
+
+                <td>
+                  <strong class="order-no-main">
+                    {{ order.platformOrderNo || '-' }}
+                  </strong>
+                </td>
+
+                <td>
+                  <span class="platform-badge" :class="getPlatformClass(order.platformType)">
+                    {{ platformNames[order.platformType] || order.platformType }}
+                  </span>
+                </td>
+
+                <td class="text-main">
+                  {{ order.menuSummary }}
+                </td>
+
+                <td class="text-muted">
+                  {{ formatMoney(order.totalAmount) }}
+                </td>
+
+                <td>
+                  <strong
+                    class="profit-strong"
+                    :class="{ 'loss-text': Number(order.netProfit || 0) < 0 }"
+                  >
+                    {{ formatMoney(order.netProfit) }}
+                  </strong>
+                </td>
+
+                <td class="text-main preview-reason">
+                  {{ getPreviewHistoryText(order) }}
+                </td>
+              </tr>
+
+              <tr v-if="previewOrders.length === 0">
+                <td colspan="8" class="empty-message">
+                  현재 필터 조건에 맞는 주문이 없습니다.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
         
         <div class="filter-export-row">
           <div>적용 필터: <strong>{{ filterSummaryText }}</strong></div>
-          <button type="button" class="primary-button" @click="exportExcel('전체')">현재 필터 결과 엑셀 내보내기</button>
+          <button
+            type="button"
+            class="primary-button"
+            @click="exportExcel('전체')"
+            :disabled="reportStore.isExporting"
+          >
+            {{ reportStore.isExporting ? 'CSV 생성 중...' : '현재 필터 결과 CSV 내보내기' }}
+          </button>
         </div>
       </section>
 
@@ -512,7 +898,7 @@ const goToMenuManagement = () => {
               <h2>현재 필터 결과 전체 내보내기</h2>
               <p class="required-note">기간, 플랫폼, 상태, 위험/확인, 검색어 조건을 그대로 적용합니다.</p>
             </div>
-            <button class="primary-button" @click="exportExcel('전체')">필터 결과 전체 생성</button>
+            <button class="primary-button" @click="exportExcel('전체')">필터 결과 전체 CSV 생성</button>
           </div>
           <div class="info-banner" style="margin-bottom:0;">{{ filterSummaryText }} · 총 {{ filteredOrders.length }}건</div>
         </article>
@@ -520,19 +906,27 @@ const goToMenuManagement = () => {
         <article class="card col-4 export-card">
           <h3>매출 내보내기</h3>
           <p>현재 필터 결과 중 완료 주문 {{ salesOrders.length }}건의 상세 매출 항목을 저장합니다.</p>
-          <button class="primary-button card-button" @click="exportExcel('매출')">필터 매출 생성</button>
+          <button class="primary-button card-button" @click="exportExcel('매출')">필터 매출 CSV 생성</button>
         </article>
         
         <article class="card col-4 export-card">
           <h3>취소 이력 내보내기</h3>
           <p>현재 필터 결과 중 취소 주문 {{ cancelOrders.length }}건의 상세 사유를 저장합니다.</p>
-          <button class="primary-button card-button" @click="exportExcel('취소')">필터 취소 생성</button>
+          <button class="primary-button card-button" @click="exportExcel('취소')">필터 취소 CSV 생성</button>
+        </article>
+
+        <article class="card col-4 export-card">
+          <h3>환불 이력 내보내기</h3>
+          <p>현재 필터 결과 중 환불 주문 {{ refundOrders.length }}건의 상세 사유를 저장합니다.</p>
+          <button class="primary-button card-button" @click="exportExcel('환불')">
+            필터 환불 CSV 생성
+          </button>
         </article>
         
         <article class="card col-4 export-card">
           <h3>플랫폼 정산 요약</h3>
           <p>현재 필터 결과 기준 플랫폼별 요약 통계를 저장합니다.</p>
-          <button class="primary-button card-button" @click="exportExcel('플랫폼 정산')">필터 정산 생성</button>
+          <button class="primary-button card-button" @click="exportExcel('플랫폼 정산')">필터 정산 CSV 생성</button>
         </article>
 
         <article class="card col-12">
@@ -755,7 +1149,7 @@ const goToMenuManagement = () => {
   width: 100%;
   min-width: 1100px;
   border-collapse: collapse;
-  text-align: left;
+  text-align: center;
 }
 
 .data-table th {
@@ -766,12 +1160,15 @@ const goToMenuManagement = () => {
   font-weight: 900;
   border-top: 1px solid #f1f5f9;
   border-bottom: 2px solid #e5e7eb;
+  text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
 .data-table td {
   padding: 18px 16px;
   border-bottom: 1px solid #f1f5f9;
+  text-align: center;
   vertical-align: middle;
 }
 
@@ -782,6 +1179,21 @@ const goToMenuManagement = () => {
 .order-no-main { display: block; color: #111827; font-size: 17px; font-weight: 900; }
 .order-no-sub { display: block; margin-top: 4px; color: #94a3b8; font-size: 14px; font-weight: 700; }
 .profit-strong { color: #111827; font-size: 18px; font-weight: 900; }
+
+.data-table .text-muted,
+.data-table .text-main,
+.data-table .order-no-main,
+.data-table .order-no-sub,
+.data-table .profit-strong,
+.data-table .cancel-reason-text,
+.data-table .preview-reason {
+  text-align: center;
+}
+
+.data-table .platform-badge,
+.data-table .status-badge {
+  margin: 0 auto;
+}
 
 .platform-badge, .status-badge {
   display: inline-flex;
@@ -813,6 +1225,11 @@ const goToMenuManagement = () => {
 
 .status-canceled { color: #b91c1c; background-color: #fee2e2; }
 
+.status-refunded {
+  color: #6d28d9;
+  background-color: #ede9fe;
+}
+
 .empty-message {
   padding: 60px 0;
   text-align: center;
@@ -820,6 +1237,7 @@ const goToMenuManagement = () => {
   font-size: 16px;
   font-weight: 800;
 }
+
 
 /* ============================================================
    [탭 2] 취소 리포트 전용 레이아웃
@@ -1025,6 +1443,67 @@ const goToMenuManagement = () => {
 
 .card-button { width: 100%; margin-top: auto; }
 
+.export-preview-box {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background-color: #f8fbff;
+}
+
+.export-preview-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.export-preview-header h3 {
+  margin: 0 0 4px;
+  color: #111827;
+  font-size: 17px;
+}
+
+.export-preview-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.export-preview-header span {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: #164e68;
+  background-color: #eaf8fd;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.preview-table {
+  min-width: 960px;
+}
+
+.preview-reason {
+  max-width: 260px;
+  line-height: 1.5;
+}
+
+.status-completed {
+  color: #166534;
+  background-color: #dcfce7;
+}
+
+.status-default {
+  color: #475569;
+  background-color: #f1f5f9;
+}
+
+.loss-text {
+  color: #dc2626;
+}
+
 /* ============================================================
    반응형
    ============================================================ */
@@ -1051,4 +1530,526 @@ const goToMenuManagement = () => {
   .filter-export-row { flex-direction: column; align-items: stretch; }
   .filter-export-row .primary-button { width: 100%; }
 }
+
+
+
+/* ============================================================
+   2026-06-27 리포트 테이블 / 필터 / 글자 굵기 보정
+   ============================================================ */
+.report-page {
+  padding: 22px 28px;
+}
+
+.page-header.report-page-header {
+  gap: 16px;
+}
+
+.page-header h1 {
+  font-weight: 700;
+}
+
+.header-desc,
+.required-note {
+  font-weight: 500;
+}
+
+.primary-button,
+.sub-button,
+.tab {
+  font-weight: 700;
+}
+
+.report-summary-grid {
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.summary-box {
+  padding: 20px 22px;
+}
+
+.summary-box span,
+.summary-box p {
+  font-weight: 500;
+}
+
+.summary-box strong {
+  font-size: 30px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  table-layout: fixed;
+}
+
+.data-table th {
+  padding: 15px 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 15px 12px;
+  white-space: nowrap;
+}
+
+.data-table .text-muted,
+.data-table .text-main,
+.data-table .profit-strong {
+  white-space: nowrap;
+}
+
+.text-muted {
+  font-weight: 500;
+}
+
+.text-main,
+.order-no-main,
+.profit-strong {
+  font-weight: 700;
+}
+
+.order-no-main {
+  word-break: break-all;
+  white-space: normal;
+}
+
+.profit-strong {
+  white-space: nowrap;
+}
+
+.platform-badge,
+.status-badge {
+  font-weight: 700;
+}
+
+.sales-report-combined-card .data-table {
+  min-width: 1180px;
+}
+
+.sales-report-combined-card .data-table th:nth-child(1),
+.sales-report-combined-card .data-table td:nth-child(1) { width: 78px; }
+.sales-report-combined-card .data-table th:nth-child(2),
+.sales-report-combined-card .data-table td:nth-child(2) { width: 145px; }
+.sales-report-combined-card .data-table th:nth-child(3),
+.sales-report-combined-card .data-table td:nth-child(3) { width: 90px; }
+.sales-report-combined-card .data-table th:nth-child(4),
+.sales-report-combined-card .data-table td:nth-child(4) { width: 145px; }
+.sales-report-combined-card .data-table th:nth-child(5),
+.sales-report-combined-card .data-table td:nth-child(5),
+.sales-report-combined-card .data-table th:nth-child(6),
+.sales-report-combined-card .data-table td:nth-child(6),
+.sales-report-combined-card .data-table th:nth-child(7),
+.sales-report-combined-card .data-table td:nth-child(7),
+.sales-report-combined-card .data-table th:nth-child(8),
+.sales-report-combined-card .data-table td:nth-child(8),
+.sales-report-combined-card .data-table th:nth-child(9),
+.sales-report-combined-card .data-table td:nth-child(9),
+.sales-report-combined-card .data-table th:nth-child(10),
+.sales-report-combined-card .data-table td:nth-child(10),
+.sales-report-combined-card .data-table th:nth-child(11),
+.sales-report-combined-card .data-table td:nth-child(11),
+.sales-report-combined-card .data-table th:nth-child(12),
+.sales-report-combined-card .data-table td:nth-child(12) { width: 92px; }
+.sales-report-combined-card .data-table th:nth-child(13),
+.sales-report-combined-card .data-table td:nth-child(13) { width: 108px; }
+
+.report-cancel-layout .data-table {
+  min-width: 1180px;
+  table-layout: fixed;
+}
+
+.report-cancel-layout .data-table th:nth-child(1),
+.report-cancel-layout .data-table td:nth-child(1) { width: 78px; }
+.report-cancel-layout .data-table th:nth-child(2),
+.report-cancel-layout .data-table td:nth-child(2) { width: 78px; }
+.report-cancel-layout .data-table th:nth-child(3),
+.report-cancel-layout .data-table td:nth-child(3) { width: 150px; }
+.report-cancel-layout .data-table th:nth-child(4),
+.report-cancel-layout .data-table td:nth-child(4) { width: 90px; }
+.report-cancel-layout .data-table th:nth-child(5),
+.report-cancel-layout .data-table td:nth-child(5) { width: 170px; }
+.report-cancel-layout .data-table th:nth-child(6),
+.report-cancel-layout .data-table td:nth-child(6) { width: 120px; }
+.report-cancel-layout .data-table th:nth-child(7),
+.report-cancel-layout .data-table td:nth-child(7) { width: 360px; }
+.report-cancel-layout .data-table th:nth-child(8),
+.report-cancel-layout .data-table td:nth-child(8) { width: 120px; }
+
+.cancel-reason-text,
+.report-cancel-layout .data-table td:nth-child(7) {
+  min-width: 0;
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.45;
+}
+
+.report-cancel-layout .data-table td:nth-child(5) {
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.45;
+}
+
+.cancel-type-list > div {
+  gap: 14px;
+  padding: 18px 22px;
+}
+
+.cancel-type-list span {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.cancel-type-list strong {
+  flex-shrink: 0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.report-filter-grid {
+  grid-template-columns: minmax(130px, .8fr) minmax(130px, .8fr) minmax(130px, .8fr) minmax(260px, 2.4fr);
+  gap: 14px;
+}
+
+.filter-group label,
+.filter-result-line,
+.filter-export-row,
+.export-card p,
+.export-preview-header span {
+  font-weight: 500;
+}
+
+.filter-group input,
+.filter-group select {
+  font-weight: 500;
+}
+
+.filter-export-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.filter-export-row .primary-button {
+  min-width: 180px;
+  white-space: nowrap;
+}
+
+.export-card h3,
+.export-preview-header h3 {
+  font-weight: 700;
+}
+
+.preview-table {
+  min-width: 1040px;
+}
+
+.preview-reason {
+  max-width: none;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+@media (max-width: 1400px) {
+  .report-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .report-filter-grid .filter-group.wide {
+    grid-column: span 3;
+  }
+}
+
+
+/* ============================================================
+   2026-06-27 01:39 최신 기준 리포트 레이아웃 보정
+   ============================================================ */
+.report-filter-grid {
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.report-filter-grid .filter-group.wide,
+.report-filter-grid .keyword-filter {
+  grid-column: span 3;
+  min-width: 0;
+}
+
+.filter-group input,
+.filter-group select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.report-cancel-layout .data-table {
+  min-width: 1120px;
+  table-layout: fixed;
+}
+
+.report-cancel-layout .data-table th:nth-child(1),
+.report-cancel-layout .data-table td:nth-child(1) { width: 86px; }
+.report-cancel-layout .data-table th:nth-child(2),
+.report-cancel-layout .data-table td:nth-child(2) { width: 76px; }
+.report-cancel-layout .data-table th:nth-child(3),
+.report-cancel-layout .data-table td:nth-child(3) { width: 150px; }
+.report-cancel-layout .data-table th:nth-child(4),
+.report-cancel-layout .data-table td:nth-child(4) { width: 96px; }
+.report-cancel-layout .data-table th:nth-child(5),
+.report-cancel-layout .data-table td:nth-child(5) { width: 150px; }
+.report-cancel-layout .data-table th:nth-child(6),
+.report-cancel-layout .data-table td:nth-child(6) { width: 110px; }
+.report-cancel-layout .data-table th:nth-child(7),
+.report-cancel-layout .data-table td:nth-child(7) { width: 330px; }
+.report-cancel-layout .data-table th:nth-child(8),
+.report-cancel-layout .data-table td:nth-child(8) { width: 122px; }
+
+.report-cancel-layout .data-table td:nth-child(6),
+.report-cancel-layout .data-table td:nth-child(6) .status-badge {
+  white-space: nowrap;
+}
+
+.cancel-reason-text,
+.report-cancel-layout .data-table td:nth-child(7) {
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.cancel-type-list > div {
+  gap: 14px;
+}
+
+.cancel-type-list span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cancel-type-list strong {
+  white-space: nowrap;
+}
+
+@media (max-width: 1400px) {
+  .report-filter-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .report-filter-grid .filter-group.wide,
+  .report-filter-grid .keyword-filter {
+    grid-column: span 3;
+  }
+}
+
+@media (max-width: 900px) {
+  .report-filter-grid,
+  .report-filter-grid .filter-group.wide,
+  .report-filter-grid .keyword-filter {
+    grid-template-columns: 1fr;
+    grid-column: span 1;
+  }
+}
+
+
+
+/* ============================================================
+   2026-06-27 취소/환불 이력 테이블 실제 적용 보정
+   - 작은 화면에서는 테이블 내부 가로 스크롤을 사용한다.
+   - 유형/상세사유가 겹치지 않도록 colgroup으로 폭을 고정한다.
+   ============================================================ */
+.report-cancel-layout .report-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cancel-history-scroll {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+}
+
+.cancel-history-table {
+  width: 100%;
+  min-width: 1380px !important;
+  table-layout: fixed !important;
+  border-collapse: collapse;
+}
+
+.cancel-history-table .cancel-col-date { width: 120px; }
+.cancel-history-table .cancel-col-status { width: 86px; }
+.cancel-history-table .cancel-col-order-no { width: 210px; }
+.cancel-history-table .cancel-col-platform { width: 140px; }
+.cancel-history-table .cancel-col-menu { width: 220px; }
+.cancel-history-table .cancel-col-type { width: 190px; }
+.cancel-history-table .cancel-col-reason { width: 300px; }
+.cancel-history-table .cancel-col-processed-at { width: 160px; }
+
+.cancel-history-table th,
+.cancel-history-table td {
+  text-align: center !important;
+  vertical-align: middle !important;
+  box-sizing: border-box;
+}
+
+.cancel-history-table th {
+  padding: 16px 12px !important;
+  white-space: nowrap !important;
+}
+
+.cancel-history-table td {
+  padding: 18px 12px !important;
+}
+
+.cancel-date-cell,
+.cancel-status-cell,
+.cancel-platform-cell,
+.cancel-type-cell,
+.cancel-processed-at-cell {
+  white-space: nowrap !important;
+}
+
+.cancel-order-no-cell .order-no-main {
+  max-width: 190px;
+  margin: 0 auto;
+  white-space: normal !important;
+  word-break: break-all;
+  line-height: 1.35;
+}
+
+.cancel-menu-cell {
+  white-space: normal !important;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.cancel-type-cell .status-badge,
+.cancel-type-badge {
+  max-width: 170px;
+  margin: 0 auto !important;
+  padding: 0 12px !important;
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cancel-reason-text {
+  min-width: 0 !important;
+  max-width: none !important;
+  white-space: normal !important;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-height: 1.55 !important;
+  text-align: center !important;
+}
+
+.cancel-processed-at-cell {
+  min-width: 150px;
+}
+
+
+/* ============================================================
+   손실 메뉴 분석 통합 안내 카드
+   ============================================================ */
+.report-loss-redirect-card {
+  overflow: hidden;
+}
+
+.report-loss-unified-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.report-loss-unified-main,
+.report-loss-unified-points {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+
+.report-loss-unified-main span {
+  color: #2784b8;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.report-loss-unified-main h3 {
+  margin: 10px 0 10px;
+  color: #111827;
+  font-size: 25px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.report-loss-unified-main p {
+  margin: 0;
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.report-loss-unified-points {
+  display: grid;
+  gap: 12px;
+  background: #ffffff;
+}
+
+.report-loss-unified-points div {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 4px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.report-loss-unified-points strong {
+  grid-row: span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  color: #ffffff;
+  background: #2784b8;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.report-loss-unified-points span {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.report-loss-unified-points p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1100px) {
+  .report-loss-unified-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 </style>
