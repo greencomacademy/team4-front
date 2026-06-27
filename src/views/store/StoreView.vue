@@ -717,7 +717,7 @@ const handleOperationSubmit = async () => {
           />
         </div>
         <div class="input-group">
-          <label>요구사항 경고 기준</label>
+          <label>요청사항 경고 기준</label>
           <input
             v-model="operationData.warningKeywords"
             placeholder="예: 알러지, 환불, 별점, 서비스 많이"

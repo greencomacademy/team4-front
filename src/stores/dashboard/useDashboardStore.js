@@ -20,7 +20,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
    * GET /api/orders/today
    *
    * 대시보드 우선 확인 주문에서
-   * 요구사항 위험 / 손실 위험 주문을 보조로 뽑기 위해 사용한다.
+   * 요청사항 위험 / 손실 위험 주문을 보조로 뽑기 위해 사용한다.
    */
   const todayOrders = ref([]);
 

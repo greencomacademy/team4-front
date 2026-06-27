@@ -7,21 +7,11 @@ const axios = myAxios;
 
 // [일반 주문 생성] 상태
 const generalCnt = ref(1); 
-const generalScenario = ref('NORMAL'); // 기본 시나리오 값  
+const generalScenario = ref('REQUEST_RISK'); // 요청사항 위험 시나리오 값
+const requestNoticeScenario = ref('ALLERGY'); // 요청사항 주의 시나리오 값
 
 // [지연 테스트 주문 생성] 상태 (캡처 이미지 시안에서는 제거되었으므로 내부 로직에서만 기본값 1 유지)
 const delayCnt = ref(1);
-
-// [생성 로그] 기록
-const activeMockLog = ref([]);
-
-const addLog = (message) => {
-  activeMockLog.value.unshift(message);
-  // 로그가 너무 길어지지 않게 10개까지만 유지
-  if (activeMockLog.value.length > 10) {
-    activeMockLog.value.pop();
-  }
-};
 
 // ----------------------
 // 백엔드 연동 로직
@@ -58,6 +48,10 @@ const handleError = (error) => {
   alert('요청 중 오류가 발생했습니다.');
 };
 
+const refreshHeaderNotifications = () => {
+  window.dispatchEvent(new CustomEvent('deliveryinsider:notifications-refresh'));
+};
+
 // 1. 일반 Mock 주문 (수량/시나리오 직접 지정)
 const createBaseMockData = async () => {
   try {
@@ -73,7 +67,7 @@ const createBaseMockData = async () => {
       `일반 Mock 주문 ${data.createdCount}건이 생성되었습니다. ` +
       `주문번호: ${data.orderNos.join(', ')}`;
 
-    addLog(msg);
+    refreshHeaderNotifications();
     alert(msg);
   } catch (error) {
     handleError(error);
@@ -94,7 +88,7 @@ const createScenario = async (scenarioType, title) => {
       `${title} 주문 ${data.createdCount}건이 생성되었습니다. ` +
       `주문번호: ${data.orderNos.join(', ')}`;
 
-    addLog(msg);
+    refreshHeaderNotifications();
     alert(msg);
   } catch (error) {
     handleError(error);
@@ -115,7 +109,7 @@ const createDelayOrder = async () => {
       `조리 지연 테스트 주문 ${data.createdCount}건이 생성되었습니다. ` +
       `주문번호: ${data.orderNos.join(', ')}`;
 
-    addLog(msg);
+    refreshHeaderNotifications();
     alert(msg);
   } catch (error) {
     handleError(error);
@@ -136,7 +130,7 @@ const createPeakMock = async () => {
       `발표용 피크타임 세트 ${data.createdCount}건이 생성되었습니다. ` +
       `주문번호: ${data.orderNos.join(', ')}`;
 
-    addLog(msg);
+    refreshHeaderNotifications();
     alert(msg);
   } catch (error) {
     handleError(error);
@@ -161,7 +155,7 @@ const deleteMockOrders = async () => {
     const msg =
       `매장의 Mock 주문 데이터 ${deletedCount}건이 삭제되었습니다.`;
 
-    addLog(msg);
+    refreshHeaderNotifications();
     alert(msg);
   } catch (error) {
     handleError(error);
@@ -208,32 +202,41 @@ const deleteMockOrders = async () => {
       </section>
       <section class="mock-card">
         <div class="card-header">
-          <h2>요구사항 위험 주문</h2>
+          <h2>요청사항 위험 주문</h2>
           <p>분쟁 가능 요청을 포함합니다.</p>
         </div>
         <div class="card-body">
           <div class="input-group">
             <label>시나리오</label>
             <select v-model="generalScenario" class="input-field select-field">
+              <option value="REQUEST_RISK">분쟁 가능 요청</option>
               <option value="MIXED">랜덤 혼합</option>
-              <option value="GROUP">단체 주문</option>
-              <option value="PREMIUM">프리미엄 세트</option>
+              <option value="GROUP">배달 시간 확인</option>
             </select>
           </div>
         </div>
         <div class="card-footer">
-          <button type="button" class="primary-button full-width-btn" @click="createScenario(generalScenario, '요구사항 위험')">요구사항 주문 생성</button>
+          <button type="button" class="primary-button full-width-btn" @click="createScenario(generalScenario, '요청사항 위험')">요청사항 주문 생성</button>
         </div>
       </section>
 
       <section class="mock-card">
         <div class="card-header">
-          <h2>알러지 주의 주문</h2>
-          <p>안전 확인 요청을 포함합니다.</p>
+          <h2>요청사항 주의 주문</h2>
+          <p>알러지, 배달사항, 고객 요청사항 확인 주문을 생성합니다.</p>
         </div>
-        <div class="card-body empty-body"></div>
+        <div class="card-body">
+          <div class="input-group">
+            <label>주의 유형</label>
+            <select v-model="requestNoticeScenario" class="input-field select-field">
+              <option value="ALLERGY">알러지</option>
+              <option value="GROUP">배달사항 확인</option>
+              <option value="REQUEST_RISK">요청사항 확인</option>
+            </select>
+          </div>
+        </div>
         <div class="card-footer">
-          <button type="button" class="primary-button full-width-btn" @click="createScenario('ALLERGY', '알러지 주의')">알러지 주문 생성</button>
+          <button type="button" class="primary-button full-width-btn" @click="createScenario(requestNoticeScenario, '요청사항 주의')">요청사항 주의 주문 생성</button>
         </div>
       </section>
 
@@ -293,19 +296,6 @@ const deleteMockOrders = async () => {
         <div class="card-body empty-body"></div>
         <div class="card-footer">
           <button type="button" class="sub-button danger-outline full-width-btn" @click="deleteMockOrders">Mock 주문 일괄 삭제</button>
-        </div>
-      </section>
-
-      <section class="mock-card">
-        <div class="card-header">
-          <h2>생성 로그</h2>
-          <p>최근 실행한 테스트 기능입니다.</p>
-        </div>
-        <div class="card-body log-body">
-          <div class="log-list">
-            <div v-for="(log, index) in activeMockLog" :key="index" class="log-item">{{ log }}</div>
-            <div v-if="activeMockLog.length === 0" class="log-item empty-log">아직 생성 로그가 없습니다.</div>
-          </div>
         </div>
       </section>
 
@@ -473,40 +463,6 @@ const deleteMockOrders = async () => {
   background-position: right 14px center;
   background-size: 18px;
   padding-right: 40px;
-}
-
-/* ============================================================
-   생성 로그 영역 (8번째 카드 전용)
-   ============================================================ */
-.log-body {
-  justify-content: flex-start; /* 로그는 위에서부터 채움 */
-  padding: 20px 28px 28px;
-  overflow-y: auto;
-}
-
-.log-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.log-item {
-  padding: 14px 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #334155;
-  line-height: 1.5;
-}
-
-.empty-log {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  text-align: left;
-  padding: 10px 0;
 }
 
 /* ============================================================

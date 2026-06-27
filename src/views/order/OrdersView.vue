@@ -38,9 +38,18 @@ const orders = ref([]);
 
 // 오늘 주문 관리에서 실제로 점주가 처리해야 하는 진행 상태
 const activeOrderStatuses = ['WAITING', 'COOKING', 'DELIVERING'];
+const requestAttentionStatuses = ['WAITING', 'COOKING'];
 
 const isActiveOrder = (order) => {
   return activeOrderStatuses.includes(order.orderStatus);
+};
+
+const isRequestAttentionOrder = (order) => {
+  return requestAttentionStatuses.includes(order.orderStatus);
+};
+
+const refreshHeaderNotifications = () => {
+  window.dispatchEvent(new CustomEvent('deliveryinsider:notifications-refresh'));
 };
 
 // 2. 검색 및 필터 로직 (확인 필요 필터 추가)
@@ -63,7 +72,7 @@ const filteredOrders = computed(() => {
     let attentionMatched = true;
 
     if (selectedAttention.value === 'REQUEST') {
-      attentionMatched = isActiveOrder(order) && riskBadges.length > 0;
+      attentionMatched = isRequestAttentionOrder(order) && riskBadges.length > 0;
     }
 
     if (selectedAttention.value === 'DELAY') {
@@ -148,13 +157,21 @@ watch(
 );
 
 
+// 요청사항 확인은 접수대기/조리중처럼 아직 조리·응대가 가능한 주문만 대상으로 삼는다.
+// 배달중/완료/취소/환불 주문의 과거 요청사항은 운영 리포트에서 확인한다.
+const requestAttentionOrders = computed(() => {
+  return orders.value.filter((order) => {
+    return isRequestAttentionOrder(order) && (order.riskBadges || []).length > 0;
+  });
+});
+
 // 운영 요약 카드에서 사용할 값
 const operationSummary = computed(() => {
   return {
     waitingCount: orders.value.filter((o) => o.orderStatus === 'WAITING').length,
     cookingCount: orders.value.filter((o) => o.orderStatus === 'COOKING').length,
     deliveringCount: orders.value.filter((o) => o.orderStatus === 'DELIVERING').length,
-    requestRiskCount: orders.value.filter((o) => isActiveOrder(o) && (o.riskBadges || []).length > 0).length,
+    requestRiskCount: requestAttentionOrders.value.length,
   };
 });
 
@@ -167,14 +184,14 @@ const statusModalTitle = computed(() => {
     WAITING: '접수대기 주문',
     COOKING: '조리중 주문',
     DELIVERING: '배달중 주문',
-    REQUEST_RISK: '요구사항 확인 필요',
+    REQUEST_RISK: '요청사항 확인 필요',
   };
   return titles[selectedSummaryType.value] || '주문 목록';
 });
 
 const statusModalOrders = computed(() => {
   if (selectedSummaryType.value === 'REQUEST_RISK') {
-    return orders.value.filter((order) => isActiveOrder(order) && (order.riskBadges || []).length > 0);
+    return requestAttentionOrders.value;
   }
   return orders.value.filter((order) => order.orderStatus === selectedSummaryType.value);
 });
@@ -245,7 +262,7 @@ const getRiskBadges = (order) => {
     order.requestRiskLevel === 'WARNING' &&
     badges.length === 0
   ) {
-    badges.push('요구사항 확인');
+    badges.push('요청사항 확인');
   }
 
   if (
@@ -403,7 +420,7 @@ const toOrderDetailViewData = (detail, baseOrder = {}) => {
 };
 const shortAddress = (address) => address && address.length > 18 ? `${address.slice(0, 18)}...` : address || '-';
 
-// 요구사항 주의 안내 문구 생성
+// 요청사항 주의 안내 문구 생성
 const getRequestAttentionMessage = (order) => {
   const badges = order.riskBadges || [];
   if (badges.includes('알러지 주의')) return '알러지 관련 단어가 포함되어 있습니다. 조리 전 재료와 제외 요청을 먼저 확인하세요.';
@@ -593,7 +610,7 @@ const cancelPresets = [
   '고객 요청',
   '재료 소진',
   '조리 지연',
-  '요구사항 처리 불가',
+  '요청사항 처리 불가',
   '배달 문제',
   '기타',
 ];
@@ -650,7 +667,7 @@ const getCancelTypeValue = (label) => {
     '고객 요청': 'CUSTOMER_REQUEST',
     '재료 소진': 'OUT_OF_STOCK',
     '조리 지연': 'COOKING_DELAY',
-    '요구사항 처리 불가': 'REQUEST_UNAVAILABLE',
+    '요청사항 처리 불가': 'REQUEST_UNAVAILABLE',
     '배달 문제': 'DELIVERY_ISSUE',
     '기타': 'ETC',
   }[label] || 'ETC';
@@ -709,6 +726,7 @@ const changeOrderStatus = async (order) => {
       );
 
     applyUpdatedOrder(updatedDetail, order);
+    refreshHeaderNotifications();
   } catch (error) {
     console.error('주문 상태 변경 실패:', error);
   }
@@ -795,6 +813,7 @@ const saveReason = async () => {
 
     applyUpdatedOrder(updatedDetail, order);
     closeReasonModal();
+    refreshHeaderNotifications();
   } catch (error) {
     console.error(
       reasonMode.value === 'REFUND'
@@ -858,7 +877,7 @@ const saveReason = async () => {
         >
           <span>요청사항</span>
           <strong>
-            {{ latestWaitingOrder.requestText || '요구사항 없음' }}
+            {{ latestWaitingOrder.requestText || '요청사항 없음' }}
           </strong>
 
           <small v-if="(latestWaitingOrder.riskBadges || []).length">
@@ -963,7 +982,7 @@ const saveReason = async () => {
         <label>확인 필요</label>
         <select v-model="selectedAttention" @change="selectedStatus = ''">
           <option value="">전체</option>
-          <option value="REQUEST">요구사항 확인</option>
+          <option value="REQUEST">요청사항 확인</option>
           <option value="DELAY">지연 위험</option>
           <option value="LOSS">손실 위험</option>
           <option value="CANCEL">취소 이력</option>
@@ -973,7 +992,7 @@ const saveReason = async () => {
 
       <div class="filter-group grow">
         <label>검색</label>
-        <input v-model="searchKeyword" type="text" placeholder="주문번호, 메뉴명, 주소, 요구사항 검색" />
+        <input v-model="searchKeyword" type="text" placeholder="주문번호, 메뉴명, 주소, 요청사항 검색" />
       </div>
 
       <button type="button" class="sub-button filter-button" @click="clearFilters">초기화</button>
@@ -1054,7 +1073,7 @@ const saveReason = async () => {
 
                 <td class="text-cell request-cell">
                   <small class="request-text-preview">
-                    {{ order.requestText || '요구사항 없음' }}
+                    {{ order.requestText || '요청사항 없음' }}
                   </small>
                 </td>
 
@@ -1156,12 +1175,12 @@ const saveReason = async () => {
           <div class="detail-row"><span>플랫폼</span><strong>{{ getPlatformName(selectedOrder.platformType) }}</strong></div>
           <div class="detail-row"><span>메뉴</span><strong>{{ selectedOrder.menuSummary }}</strong></div>
           <div class="detail-row"><span>배달주소</span><strong>{{ selectedOrder.deliveryAddress }}</strong></div>
-          <div class="detail-row request-row"><span>요구사항</span><strong>{{ selectedOrder.requestText || '없음' }}</strong></div>
+          <div class="detail-row request-row"><span>요청사항</span><strong>{{ selectedOrder.requestText || '없음' }}</strong></div>
         </div>
 
         <div class="detail-section request-guide" :class="(selectedOrder.riskBadges||[]).length ? 'attention' : 'plain'">
-          <h3>고객 요구사항</h3>
-          <p class="request-text-large">{{ selectedOrder.requestText || '요구사항이 없습니다.' }}</p>
+          <h3>고객 요청사항</h3>
+          <p class="request-text-large">{{ selectedOrder.requestText || '요청사항이 없습니다.' }}</p>
           
           <div v-if="(selectedOrder.riskBadges||[]).length" class="request-risk-summary">
             <strong>{{ (selectedOrder.riskBadges||[]).join(' · ') }}</strong>
@@ -1822,7 +1841,7 @@ const saveReason = async () => {
 .cost-row.total { margin-top: 6px; padding-top: 16px; border-bottom: 0; border-top: 1px solid #dbe3ee; font-weight: 900; }
 .cost-row.total strong { color: #15803d; font-size: 19px; }
 
-/* 요구사항 / 취소 가이드 영역 */
+/* 요청사항 / 취소 가이드 영역 */
 .request-guide, .cancel-history, .refund-history { padding: 16px; margin-top: 18px; border-radius: 14px; background: #f8fafc; }
 .request-guide.plain { border: 1px solid #e5e7eb; background: #ffffff; }
 .request-guide.attention { border: 1px solid #e5e7eb; border-left: 5px solid #f59e0b; background: #ffffff; }

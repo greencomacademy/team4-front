@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth/useAuthStore.js'
+import myAxios from '../../api/myAxios.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -10,16 +11,220 @@ const authStore = useAuthStore()
 // 알림 드롭다운 상태 관리
 const isNotiOpen = ref(false)
 const dropdownContainer = ref(null)
+const notifications = ref([])
+const isNotificationLoading = ref(false)
 
-// UI 시안용 더미 알림 데이터 (실제 연동 시 API 데이터로 교체)
-const notifications = ref([
-  { title: '요구사항 확인 필요', desc: '2건의 주문에 알러지·분쟁 가능 표현이 있습니다.', path: '/orders' },
-  { title: '지연 위험 주문', desc: '1건의 주문이 조리 지연 위험 상태입니다.', path: '/orders' }
-])
+const DISMISSED_NOTIFICATION_STORAGE_KEY = 'deliveryinsider.dismissedHeaderNotifications.v1'
+const ACTIVE_ORDER_STATUSES = ['WAITING', 'COOKING', 'DELIVERING']
+const REQUEST_ATTENTION_STATUSES = ['WAITING', 'COOKING']
+
+const isActiveOrder = (order = {}) => {
+  return ACTIVE_ORDER_STATUSES.includes(order.orderStatus)
+}
+
+const readDismissedNotificationKeys = () => {
+  try {
+    const raw = localStorage.getItem(DISMISSED_NOTIFICATION_STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    return []
+  }
+}
+
+const writeDismissedNotificationKeys = (keys) => {
+  const normalizedKeys = Array.from(new Set(keys)).slice(-80)
+  localStorage.setItem(
+    DISMISSED_NOTIFICATION_STORAGE_KEY,
+    JSON.stringify(normalizedKeys)
+  )
+}
+
+const dismissNotification = (notification) => {
+  if (!notification?.dismissKey) {
+    return
+  }
+
+  writeDismissedNotificationKeys([
+    ...readDismissedNotificationKeys(),
+    notification.dismissKey,
+  ])
+}
+
+const normalizeNotificationText = (value) => {
+  return String(value || '')
+    .replaceAll('요구사항', '요청사항')
+    .replaceAll('요구확인', '요청확인')
+}
+
+const getOrderTimeValue = (order = {}) => {
+  const rawDateTime =
+    order.orderedAt ||
+    order.createdAt ||
+    order.cookingStartedAt ||
+    order.completedAt ||
+    ''
+
+  const time = new Date(rawDateTime).getTime()
+
+  if (!Number.isNaN(time)) {
+    return time
+  }
+
+  return Number(order.id || 0)
+}
+
+const sortLatestOrders = (orderList = []) => {
+  return [...orderList].sort((a, b) => {
+    return getOrderTimeValue(b) - getOrderTimeValue(a)
+  })
+}
+
+const hasRequestAttention = (order = {}) => {
+  if (!REQUEST_ATTENTION_STATUSES.includes(order.orderStatus)) {
+    return false
+  }
+
+  return Boolean(
+    order.requestRiskType ||
+    ['WARNING', 'DANGER'].includes(order.requestRiskLevel)
+  )
+}
+
+const isDelayAttention = (order = {}, todayOrderMap = new Map()) => {
+  const baseOrder = todayOrderMap.get(order.id) || {}
+
+  if (!isActiveOrder(baseOrder)) {
+    return false
+  }
+
+  const delayRiskLevel = order.delayRiskLevel || baseOrder.delayRiskLevel || 'SAFE'
+
+  return delayRiskLevel !== 'SAFE'
+}
+
+const createNotificationKey = (type, orderList = []) => {
+  const firstOrder = sortLatestOrders(orderList)[0]
+  const firstId = firstOrder?.id || firstOrder?.orderNo || 'none'
+
+  return `${type}:${orderList.length}:${firstId}`
+}
+
+const buildVisibleNotifications = (candidateNotifications = []) => {
+  const dismissedKeys = new Set(readDismissedNotificationKeys())
+
+  return candidateNotifications.filter((notification) => {
+    return !dismissedKeys.has(notification.dismissKey)
+  })
+}
+
+const buildNotificationsFromOrders = (todayOrders = [], delayRiskOrders = []) => {
+  const activeOrders = todayOrders.filter(isActiveOrder)
+  const waitingOrders = sortLatestOrders(
+    activeOrders.filter((order) => order.orderStatus === 'WAITING')
+  )
+  const requestOrders = sortLatestOrders(
+    activeOrders.filter(hasRequestAttention)
+  )
+  const todayOrderMap = new Map(
+    todayOrders.map((order) => [order.id, order])
+  )
+  const delayOrders = sortLatestOrders(
+    delayRiskOrders.filter((order) => isDelayAttention(order, todayOrderMap))
+  )
+
+  const result = []
+
+  if (waitingOrders.length > 0) {
+    result.push({
+      type: 'WAITING_ORDER',
+      title: '신규 주문 접수',
+      description: `접수대기 주문 ${waitingOrders.length}건이 있습니다. 주문을 확인해 주세요.`,
+      path: '/orders?status=WAITING',
+      dismissKey: createNotificationKey('WAITING_ORDER', waitingOrders),
+    })
+  }
+
+  if (requestOrders.length > 0) {
+    result.push({
+      type: 'REQUEST_ATTENTION',
+      title: '요청사항 확인 필요',
+      description: `${requestOrders.length}건의 주문에 알러지 · 분쟁 가능 표현이 있습니다.`,
+      path: '/orders?attention=REQUEST',
+      dismissKey: createNotificationKey('REQUEST_ATTENTION', requestOrders),
+    })
+  }
+
+  if (delayOrders.length > 0) {
+    result.push({
+      type: 'DELAY_RISK',
+      title: '지연 위험 주문',
+      description: `${delayOrders.length}건의 주문이 조리 지연 위험 상태입니다.`,
+      path: '/orders?attention=DELAY',
+      dismissKey: createNotificationKey('DELAY_RISK', delayOrders),
+    })
+  }
+
+  return buildVisibleNotifications(
+    result.map((notification) => ({
+      ...notification,
+      title: normalizeNotificationText(notification.title),
+      description: normalizeNotificationText(notification.description),
+    }))
+  )
+}
+
+const findHeaderNotifications = async () => {
+  if (!authStore.isLoggedIn && !authStore.accessToken) {
+    notifications.value = []
+    return
+  }
+
+  try {
+    isNotificationLoading.value = true
+
+    const [todayOrdersResult, delayRiskResult] = await Promise.allSettled([
+      myAxios.get('/api/orders/today'),
+      myAxios.get('/api/orders/delay-risks'),
+    ])
+
+    const todayOrders =
+      todayOrdersResult.status === 'fulfilled'
+        ? todayOrdersResult.value.data.data || []
+        : []
+
+    const delayRiskOrders =
+      delayRiskResult.status === 'fulfilled'
+        ? delayRiskResult.value.data.data || []
+        : []
+
+    notifications.value = buildNotificationsFromOrders(
+      todayOrders,
+      delayRiskOrders
+    )
+  } catch (error) {
+    notifications.value = []
+    console.error(error)
+  } finally {
+    isNotificationLoading.value = false
+  }
+}
+
+const handleNotificationRefreshRequest = async () => {
+  await findHeaderNotifications()
+}
 
 // 알림 메뉴 토글
 const toggleNoti = () => {
   isNotiOpen.value = !isNotiOpen.value
+}
+
+const moveNotification = (noti) => {
+  dismissNotification(noti)
+  notifications.value = notifications.value.filter((item) => item.dismissKey !== noti.dismissKey)
+  router.push(noti.path || '/orders')
+  isNotiOpen.value = false
 }
 
 // 외부 영역 클릭 시 알림 메뉴 닫기
@@ -29,12 +234,16 @@ const closeNoti = (e) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('click', closeNoti)
+  window.addEventListener('deliveryinsider:notifications-refresh', handleNotificationRefreshRequest)
+
+  await findHeaderNotifications()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', closeNoti)
+  window.removeEventListener('deliveryinsider:notifications-refresh', handleNotificationRefreshRequest)
 })
 
 const logout = async () => {
@@ -59,7 +268,7 @@ const logout = async () => {
       
       <!-- 알림 드롭다운 영역 -->
       <div class="header-icon-wrap" ref="dropdownContainer">
-        <button type="button" class="header-icon-button" @click="toggleNoti" aria-label="알림 보기">
+        <button type="button" class="header-icon-button" @click.stop="toggleNoti" aria-label="알림 보기">
           🔔<b v-if="notifications.length">{{ notifications.length }}</b>
         </button>
         
@@ -68,19 +277,23 @@ const logout = async () => {
             <strong>알림</strong>
             <span>현재 운영 기준</span>
           </div>
+
+          <div v-if="isNotificationLoading" class="notification-empty">
+            알림을 불러오는 중입니다.
+          </div>
           
           <button 
             v-for="(noti, index) in notifications" 
-            :key="index"
+            :key="`${noti.title}-${index}`"
             type="button" 
             class="notification-item" 
-            @click="router.push(noti.path); isNotiOpen = false;"
+            @click="moveNotification(noti)"
           >
             <strong>{{ noti.title }}</strong>
-            <small>{{ noti.desc }}</small>
+            <small>{{ noti.description }}</small>
           </button>
 
-          <div v-if="!notifications.length" class="notification-empty">
+          <div v-if="!isNotificationLoading && !notifications.length" class="notification-empty">
             새로운 알림이 없습니다.
           </div>
         </div>

@@ -61,7 +61,7 @@ const statusNames = {
 };
 
 const riskNames = {
-  REQUEST: '요구사항 확인',
+  REQUEST: '요청사항 확인',
   LOSS: '손실 위험',
   CANCEL: '취소 이력',
   REFUND: '환불 이력',
@@ -71,7 +71,7 @@ const cancelTypeNames = {
   CUSTOMER_REQUEST: '고객 요청',
   OUT_OF_STOCK: '재료 소진',
   COOKING_DELAY: '조리 지연',
-  REQUEST_UNAVAILABLE: '요구사항 처리 불가',
+  REQUEST_UNAVAILABLE: '요청사항 처리 불가',
   DELIVERY_ISSUE: '배달 문제',
   ETC: '기타',
 };
@@ -89,7 +89,7 @@ const reasonTypeLabels = [
   '고객 요청',
   '재료 소진',
   '조리 지연',
-  '요구사항 처리 불가',
+  '요청사항 처리 불가',
   '배달 문제',
   '음식 문제',
   '매장 실수',
@@ -322,9 +322,13 @@ const applyRouteQueryToReport = () => {
     activeTab.value = requestedTab;
   }
 
-  if (query.status) {
-    filters.value.status = String(query.status);
-  }
+  /*
+   * 매출 리포트는 화면에 별도 상태 필터가 없다.
+   * 대시보드에서 /reports?tab=sales&status=COMPLETED 로 들어오면
+   * 전체 조회 데이터가 COMPLETED로만 제한되어 취소율/주문 조회가 0으로 보일 수 있다.
+   * 그래서 라우트의 status query는 운영 리포트 기본 조회에는 적용하지 않는다.
+   * CSV 내보내기 버튼은 exportExcel()에서 필요한 상태값을 별도로 넣는다.
+   */
 
   if (query.platform) {
     filters.value.platform = String(query.platform);
@@ -527,7 +531,7 @@ onMounted(() => {
       <div class="card-header">
         <div class="title-area">
           <h2>매출 리포트</h2>
-          <p class="required-note">매장 영업일 기준으로 완료 매출과 예상 순수익을 확인합니다.</p>
+          <p class="required-note">매장 영업일 기준으로 완료 매출과 예상 순수익을 확인합니다. 필터 설정에서 날짜별 조회가 가능합니다.</p>
         </div>
         <button class="primary-button" @click="exportExcel('매출')">매출 내보내기</button>
       </div>
@@ -538,7 +542,7 @@ onMounted(() => {
           <strong>{{ formatMoney(summaryStats.totalSales) }}</strong>
           <p>영업일 기준 완료 주문 집계</p>
         </article>
-        <article class="summary-box">
+        <article class="summary-box profit-box">
           <span>예상 순수익</span>
           <strong>{{ formatMoney(summaryStats.totalProfit) }}</strong>
           <p>수수료·배달비·원가 반영</p>
@@ -863,7 +867,7 @@ onMounted(() => {
             <label>위험/확인</label>
             <select v-model="filters.risk">
               <option value="">전체</option>
-              <option value="REQUEST">요구사항 확인</option>
+              <option value="REQUEST">요청사항 확인</option>
               <option value="LOSS">손실 위험</option>
               <option value="CANCEL">취소 이력</option>
               <option value="REFUND">환불 이력</option>
@@ -871,7 +875,7 @@ onMounted(() => {
           </div>
           <div class="filter-group wide keyword-filter">
             <label>검색어</label>
-            <input type="text" v-model="filters.keyword" placeholder="주문번호, 메뉴, 주소, 요구사항, 취소/환불 사유 검색">
+            <input type="text" v-model="filters.keyword" placeholder="주문번호, 메뉴, 주소, 요청사항, 취소/환불 사유 검색">
           </div>
         </div>
         
@@ -1207,6 +1211,11 @@ onMounted(() => {
   background: #fffafa;
 }
 
+.summary-box.profit-box {
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+}
+
 .summary-box span {
   display: block;
   margin-bottom: 10px;
@@ -1224,6 +1233,8 @@ onMounted(() => {
 }
 
 .summary-box.cancel-box strong { color: #dc2626; }
+.summary-box.profit-box span { color: #166534; }
+.summary-box.profit-box strong { color: #15803d; }
 
 .summary-box p {
   margin: 10px 0 0;

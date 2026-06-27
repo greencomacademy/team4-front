@@ -24,6 +24,17 @@ const navItems = ref([
   { name: 'Mock 데이터', path: '/mockdata' }
 ])
 
+const isRequestRiskOrder = (order = {}) => {
+  if (!['WAITING', 'COOKING'].includes(order.orderStatus)) {
+    return false
+  }
+
+  return Boolean(
+    order.requestRiskType ||
+    ['CAUTION', 'WARNING', 'DANGER'].includes(order.requestRiskLevel)
+  )
+}
+
 const getOperationLevel = (summary) => {
   const loadRate = Number(summary.loadRate || 0)
   const delayRisk = Number(summary.delayRisk || 0)
@@ -58,6 +69,7 @@ const operationSummary = computed(() => {
       delayRisk: 0,
       requestRisk: 0,
       lossRisk: 0,
+      orderCount: 0,
       sales: 0,
       profit: 0,
       completedCount: 0,
@@ -67,10 +79,14 @@ const operationSummary = computed(() => {
     }
   }
 
+  const requestRisk =
+    dashboardStore.todayOrders.filter(isRequestRiskOrder).length
+
   const summary = {
     loadRate: data.loadRate || 0,
+    orderCount: data.todayOrderCount || 0,
     delayRisk: data.delayRiskCount || 0,
-    requestRisk: data.requestRiskCount || 0,
+    requestRisk,
     lossRisk: data.lossRiskCount || 0,
     sales: data.todaySales || 0,
     profit: data.todayNetProfit || 0,
@@ -131,11 +147,15 @@ onMounted(async () => {
           현재 운영 <em>{{ updatedAtText }}</em>
         </span>
         <strong>{{ operationSummary.level }}</strong>
-        <p>부하율 {{ operationSummary.loadRate }}% · 지연 {{ operationSummary.delayRisk }} · 요구 {{ operationSummary.requestRisk }}</p>
+        <p class="side-load-text">부하율 {{ operationSummary.loadRate }}%</p>
+        <div class="side-risk-lines">
+          <span>주문 {{ operationSummary.orderCount }}</span>
+          <span>지연 {{ operationSummary.delayRisk }}</span>
+          <span>요청 {{ operationSummary.requestRisk }}</span>
+        </div>
         <div class="side-load">
           <span :style="{ width: `${Math.min(operationSummary.loadRate, 100)}%` }"></span>
         </div>
-        <small class="side-card-help">피크타임에는 여기 숫자만 먼저 확인</small>
       </section>
 
       <section class="side-metric-card side-performance-card">
@@ -164,7 +184,7 @@ onMounted(async () => {
       <section class="side-action-card">
         <span>확인 필요</span>
         <button type="button" @click="router.push({ path: '/orders', query: { attention: 'REQUEST' } })">
-          요구사항 <strong>{{ operationSummary.requestRisk }}건</strong>
+          요청사항 <strong>{{ operationSummary.requestRisk }}건</strong>
         </button>
         <button type="button" @click="router.push({ path: '/orders', query: { attention: 'DELAY' } })">
           지연위험 <strong>{{ operationSummary.delayRisk }}건</strong>
@@ -290,6 +310,26 @@ onMounted(async () => {
 .side-operation-card p,
 .side-metric-card p,
 .side-metric-card small { margin-top: 8px; color: #475569; font-size: 15px; font-weight: 800; line-height: 1.45; }
+
+.side-operation-card .side-load-text { margin-top: 8px; }
+.side-risk-lines {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+  color: #164e68;
+}
+.side-risk-lines span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.62);
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}
 
 /* 배경색 분기: 실시간 운영 대시보드의 운영 브리핑 색상과 동일하게 사용 */
 .side-operation-card { background: #f0fdf4; border-color: #bbf7d0; }

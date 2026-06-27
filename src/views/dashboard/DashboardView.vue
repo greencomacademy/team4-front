@@ -21,6 +21,7 @@ const defaultSummary = {
   profit: 0,
   completedCount: 0,
   activeCount: 0,
+  orderCount: 0,
   waiting: 0,
   cooking: 0,
   delivering: 0,
@@ -80,7 +81,13 @@ const summary = computed(() => {
     return defaultSummary;
   }
 
-  const level = getOperationLevel(data);
+  const requestRisk =
+    dashboardStore.todayOrders.filter(isRequestRiskOrder).length;
+
+  const level = getOperationLevel({
+    ...data,
+    requestRiskCount: requestRisk,
+  });
 
   return {
     sales: data.todaySales || 0,
@@ -88,13 +95,14 @@ const summary = computed(() => {
 
     completedCount: data.completedCount || 0,
     activeCount: data.progressOrderCount || 0,
+    orderCount: data.todayOrderCount || 0,
 
     waiting: data.waitingCount || 0,
     cooking: data.cookingCount || 0,
     delivering: data.deliveringCount || 0,
 
     delayRisk: data.delayRiskCount || 0,
-    requestRisk: data.requestRiskCount || 0,
+    requestRisk,
     lossRisk: data.lossRiskCount || 0,
 
     cancelRate: data.cancelRate || 0,
@@ -116,6 +124,10 @@ const findTodayOrderById = (orderId) => {
 };
 
 const isRequestRiskOrder = (order) => {
+  if (!['WAITING', 'COOKING'].includes(order.orderStatus)) {
+    return false;
+  }
+
   return (
     ['ALLERGY', 'DISPUTE', 'EXCESSIVE'].includes(order.requestRiskType) ||
     ['CAUTION', 'WARNING', 'DANGER'].includes(order.requestRiskLevel)
@@ -149,8 +161,8 @@ const getRequestIssueLabel = (order) => {
 
   return {
     issueLevel: 'warning',
-    issueLabel: '요구 확인',
-    issueReason: '요구사항 확인 필요',
+    issueLabel: '요청 확인',
+    issueReason: '요청사항 확인 필요',
   };
 };
 
@@ -209,7 +221,7 @@ const toLossPriorityOrder = (order) => {
  * 우선 확인 주문
  *
  * 1순위: 조리 지연 위험 주문
- * 2순위: 요구사항 위험 주문
+ * 2순위: 요청사항 위험 주문
  * 3순위: 손실 위험 주문
  */
 const priorityOrders = computed(() => {
@@ -233,7 +245,7 @@ const priorityOrders = computed(() => {
 
   dashboardStore.todayOrders
     .filter((order) => {
-      return ['WAITING', 'COOKING', 'DELIVERING'].includes(order.orderStatus);
+      return ['WAITING', 'COOKING'].includes(order.orderStatus);
     })
     .filter(isRequestRiskOrder)
     .map(toRequestPriorityOrder)
@@ -316,7 +328,7 @@ const operationBrief = computed(() => {
       title: '지금 먼저 확인할 주문이 있습니다.',
       desc:
         summary.value.message ||
-        `부하율 ${summary.value.loadRate}% · 지연 ${summary.value.delayRisk}건 · 요구확인 ${summary.value.requestRisk}건`,
+        `부하율 ${summary.value.loadRate}% · 주문 ${summary.value.orderCount}건 · 지연 ${summary.value.delayRisk}건 · 요청확인 ${summary.value.requestRisk}건`,
       tone: 'danger',
     };
   }
@@ -326,7 +338,7 @@ const operationBrief = computed(() => {
       title: '피크타임 주의 단계입니다.',
       desc:
         summary.value.message ||
-        `진행 주문 ${summary.value.activeCount}건 · 지연 ${summary.value.delayRisk}건 · 요구확인 ${summary.value.requestRisk}건 · 손실위험 ${summary.value.lossRisk}건`,
+        `영업일 주문 ${summary.value.orderCount}건 · 진행 주문 ${summary.value.activeCount}건 · 지연 ${summary.value.delayRisk}건 · 요청확인 ${summary.value.requestRisk}건 · 손실위험 ${summary.value.lossRisk}건`,
       tone: 'warning',
     };
   }
@@ -335,7 +347,7 @@ const operationBrief = computed(() => {
     title: '현재 운영은 안정적입니다.',
     desc:
       summary.value.message ||
-      '지연 위험 주문이 없거나 낮은 수준입니다. 신규 주문과 알러지 요청만 확인하세요.',
+      `영업일 주문 ${summary.value.orderCount}건 · 지연 위험은 없거나 낮은 수준입니다. 신규 주문과 알러지 요청만 확인하세요.`,
     tone: 'safe',
   };
 });
@@ -399,7 +411,6 @@ const goToSalesReport = () => {
     path: '/reports',
     query: {
       tab: 'sales',
-      status: 'COMPLETED',
     },
   });
 };
@@ -523,7 +534,7 @@ onMounted(async () => {
       >
         <div class="card-label">지연 위험</div>
         <div class="card-value text-danger">{{ summary.delayRisk }}건</div>
-        <div class="card-sub">요구확인 {{ summary.requestRisk }} · 손실 {{ summary.lossRisk }}</div>
+        <div class="card-sub">요청확인 {{ summary.requestRisk }} · 손실 {{ summary.lossRisk }}</div>
       </div>
 
       <div class="detail-card col-6">
@@ -576,7 +587,7 @@ onMounted(async () => {
           <div class="status-desc">
             <p>취소율 {{ summary.cancelRate }}%</p>
             <p><strong>운영 안정성 {{ summary.level }} 단계</strong></p>
-            <p>요구확인 {{ summary.requestRisk }}건 · 손실위험 {{ summary.lossRisk }}건</p>
+            <p>주문 {{ summary.orderCount }}건 · 요청확인 {{ summary.requestRisk }}건 · 손실위험 {{ summary.lossRisk }}건</p>
           </div>
         </div>
       </div>

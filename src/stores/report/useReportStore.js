@@ -99,7 +99,7 @@ export const useReportStore = defineStore('report', () => {
       order.requestRiskLevel === 'WARNING' ||
       order.requestRiskLevel === 'DANGER'
     ) {
-      badges.push('요구사항 확인');
+      badges.push('요청사항 확인');
     }
 
     const netProfit = Number(order.netProfit || 0);
