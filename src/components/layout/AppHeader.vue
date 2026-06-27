@@ -16,7 +16,7 @@ const isNotificationLoading = ref(false)
 
 const DISMISSED_NOTIFICATION_STORAGE_KEY = 'deliveryinsider.dismissedHeaderNotifications.v1'
 const ACTIVE_ORDER_STATUSES = ['WAITING', 'COOKING', 'DELIVERING']
-const REQUEST_ATTENTION_STATUSES = ['WAITING', 'COOKING']
+const REQUEST_ATTENTION_STATUSES = ['WAITING']
 
 const isActiveOrder = (order = {}) => {
   return ACTIVE_ORDER_STATUSES.includes(order.orderStatus)
@@ -81,14 +81,32 @@ const sortLatestOrders = (orderList = []) => {
   })
 }
 
+const REQUEST_ATTENTION_TYPES = [
+  'ALLERGY',
+  'DISPUTE',
+  'EXCESSIVE',
+  'GROUP',
+  'REQUEST',
+  'REQUEST_RISK',
+]
+
+const REQUEST_ATTENTION_LEVELS = ['WARNING', 'DANGER']
+
+const normalizeRiskValue = (value) => {
+  return String(value || '').trim().toUpperCase()
+}
+
 const hasRequestAttention = (order = {}) => {
   if (!REQUEST_ATTENTION_STATUSES.includes(order.orderStatus)) {
     return false
   }
 
-  return Boolean(
-    order.requestRiskType ||
-    ['WARNING', 'DANGER'].includes(order.requestRiskLevel)
+  const riskType = normalizeRiskValue(order.requestRiskType)
+  const riskLevel = normalizeRiskValue(order.requestRiskLevel)
+
+  return (
+    REQUEST_ATTENTION_TYPES.includes(riskType) ||
+    REQUEST_ATTENTION_LEVELS.includes(riskLevel)
   )
 }
 
@@ -150,7 +168,7 @@ const buildNotificationsFromOrders = (todayOrders = [], delayRiskOrders = []) =>
     result.push({
       type: 'REQUEST_ATTENTION',
       title: '요청사항 확인 필요',
-      description: `${requestOrders.length}건의 주문에 알러지 · 분쟁 가능 표현이 있습니다.`,
+      description: `${requestOrders.length}건의 접수대기 주문에 확인이 필요한 요청사항이 있습니다.`,
       path: '/orders?attention=REQUEST',
       dismissKey: createNotificationKey('REQUEST_ATTENTION', requestOrders),
     })

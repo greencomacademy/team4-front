@@ -123,19 +123,39 @@ const findTodayOrderById = (orderId) => {
   });
 };
 
+const REQUEST_ATTENTION_TYPES = [
+  'ALLERGY',
+  'DISPUTE',
+  'EXCESSIVE',
+  'GROUP',
+  'REQUEST',
+  'REQUEST_RISK',
+];
+
+const REQUEST_ATTENTION_LEVELS = ['WARNING', 'DANGER'];
+
+const normalizeRiskValue = (value) => {
+  return String(value || '').trim().toUpperCase();
+};
+
 const isRequestRiskOrder = (order) => {
-  if (!['WAITING', 'COOKING'].includes(order.orderStatus)) {
+  if (order.orderStatus !== 'WAITING') {
     return false;
   }
 
+  const riskType = normalizeRiskValue(order.requestRiskType);
+  const riskLevel = normalizeRiskValue(order.requestRiskLevel);
+
   return (
-    ['ALLERGY', 'DISPUTE', 'EXCESSIVE'].includes(order.requestRiskType) ||
-    ['CAUTION', 'WARNING', 'DANGER'].includes(order.requestRiskLevel)
+    REQUEST_ATTENTION_TYPES.includes(riskType) ||
+    REQUEST_ATTENTION_LEVELS.includes(riskLevel)
   );
 };
 
 const getRequestIssueLabel = (order) => {
-  if (order.requestRiskType === 'ALLERGY') {
+  const riskType = normalizeRiskValue(order.requestRiskType);
+
+  if (riskType === 'ALLERGY') {
     return {
       issueLevel: 'critical',
       issueLabel: '알러지 주의',
@@ -143,7 +163,7 @@ const getRequestIssueLabel = (order) => {
     };
   }
 
-  if (order.requestRiskType === 'DISPUTE') {
+  if (riskType === 'DISPUTE') {
     return {
       issueLevel: 'critical',
       issueLabel: '분쟁 가능',
@@ -151,11 +171,19 @@ const getRequestIssueLabel = (order) => {
     };
   }
 
-  if (order.requestRiskType === 'EXCESSIVE') {
+  if (riskType === 'EXCESSIVE') {
     return {
       issueLevel: 'warning',
       issueLabel: '과도 요청',
       issueReason: '추가 제공 기준 확인 필요',
+    };
+  }
+
+  if (riskType === 'GROUP') {
+    return {
+      issueLevel: 'warning',
+      issueLabel: '배달사항 확인',
+      issueReason: '배달 전달 요청 확인 필요',
     };
   }
 

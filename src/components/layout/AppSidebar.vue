@@ -24,14 +24,32 @@ const navItems = ref([
   { name: 'Mock 데이터', path: '/mockdata' }
 ])
 
+const REQUEST_ATTENTION_TYPES = [
+  'ALLERGY',
+  'DISPUTE',
+  'EXCESSIVE',
+  'GROUP',
+  'REQUEST',
+  'REQUEST_RISK',
+]
+
+const REQUEST_ATTENTION_LEVELS = ['WARNING', 'DANGER']
+
+const normalizeRiskValue = (value) => {
+  return String(value || '').trim().toUpperCase()
+}
+
 const isRequestRiskOrder = (order = {}) => {
-  if (!['WAITING', 'COOKING'].includes(order.orderStatus)) {
+  if (order.orderStatus !== 'WAITING') {
     return false
   }
 
-  return Boolean(
-    order.requestRiskType ||
-    ['CAUTION', 'WARNING', 'DANGER'].includes(order.requestRiskLevel)
+  const riskType = normalizeRiskValue(order.requestRiskType)
+  const riskLevel = normalizeRiskValue(order.requestRiskLevel)
+
+  return (
+    REQUEST_ATTENTION_TYPES.includes(riskType) ||
+    REQUEST_ATTENTION_LEVELS.includes(riskLevel)
   )
 }
 

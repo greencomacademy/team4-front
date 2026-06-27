@@ -38,7 +38,7 @@ const orders = ref([]);
 
 // 오늘 주문 관리에서 실제로 점주가 처리해야 하는 진행 상태
 const activeOrderStatuses = ['WAITING', 'COOKING', 'DELIVERING'];
-const requestAttentionStatuses = ['WAITING', 'COOKING'];
+const requestAttentionStatuses = ['WAITING'];
 
 const isActiveOrder = (order) => {
   return activeOrderStatuses.includes(order.orderStatus);
@@ -157,8 +157,8 @@ watch(
 );
 
 
-// 요청사항 확인은 접수대기/조리중처럼 아직 조리·응대가 가능한 주문만 대상으로 삼는다.
-// 배달중/완료/취소/환불 주문의 과거 요청사항은 운영 리포트에서 확인한다.
+// 요청사항 확인은 접수대기 주문만 대상으로 삼는다.
+// 조리 시작 이후에는 점주가 요청사항을 확인하고 접수한 것으로 보고 알림에서 제외한다.
 const requestAttentionOrders = computed(() => {
   return orders.value.filter((order) => {
     return isRequestAttentionOrder(order) && (order.riskBadges || []).length > 0;
@@ -243,33 +243,47 @@ const sortFifoOrders = (orderList) => {
   });
 };
 
+const REQUEST_ATTENTION_TYPES = [
+  'ALLERGY',
+  'DISPUTE',
+  'EXCESSIVE',
+  'GROUP',
+  'REQUEST',
+  'REQUEST_RISK',
+];
+
+const REQUEST_ATTENTION_LEVELS = ['WARNING', 'DANGER'];
+
+const normalizeRiskValue = (value) => {
+  return String(value || '').trim().toUpperCase();
+};
+
 const getRiskBadges = (order) => {
   const badges = [];
+  const riskType = normalizeRiskValue(order.requestRiskType);
+  const riskLevel = normalizeRiskValue(order.requestRiskLevel);
 
-  if (order.requestRiskType === 'ALLERGY') {
+  if (riskType === 'ALLERGY') {
     badges.push('알러지 주의');
   }
 
-  if (order.requestRiskType === 'DISPUTE') {
+  if (riskType === 'DISPUTE') {
     badges.push('분쟁 가능');
   }
 
-  if (order.requestRiskType === 'EXCESSIVE') {
+  if (riskType === 'EXCESSIVE') {
     badges.push('과도 요청');
   }
 
-  if (
-    order.requestRiskLevel === 'WARNING' &&
-    badges.length === 0
-  ) {
-    badges.push('요청사항 확인');
+  if (riskType === 'GROUP') {
+    badges.push('배달사항 확인');
   }
 
   if (
-    order.requestRiskLevel === 'DANGER' &&
-    badges.length === 0
+    ['REQUEST', 'REQUEST_RISK'].includes(riskType) ||
+    (REQUEST_ATTENTION_LEVELS.includes(riskLevel) && badges.length === 0)
   ) {
-    badges.push('위험 요청');
+    badges.push(riskLevel === 'DANGER' ? '위험 요청' : '요청사항 확인');
   }
 
   if (Number(order.netProfit || 0) < 0) {
@@ -949,7 +963,7 @@ const saveReason = async () => {
           <small>ATTENTION</small>
         </div>
         <strong>{{ operationSummary.requestRiskCount }}건</strong>
-        <p>알러지·분쟁 가능 요청</p>
+        <p>확인이 필요한 요청사항</p>
       </article>
     </section>
 
