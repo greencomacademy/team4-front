@@ -542,7 +542,10 @@ onMounted(() => {
           <strong>{{ formatMoney(summaryStats.totalSales) }}</strong>
           <p>영업일 기준 완료 주문 집계</p>
         </article>
-        <article class="summary-box profit-box">
+        <article
+          class="summary-box profit-box"
+          :class="{ 'profit-loss-box': summaryStats.totalProfit < 0 }"
+        >
           <span>예상 순수익</span>
           <strong>{{ formatMoney(summaryStats.totalProfit) }}</strong>
           <p>수수료·배달비·원가 반영</p>
@@ -598,7 +601,12 @@ onMounted(() => {
             <td class="text-muted">{{ formatMoney(order.menuCostAmount) }}</td>
             <td class="text-muted">{{ formatMoney(order.packagingAmount) }}</td>
             <td>
-              <strong class="profit-strong">{{ formatMoney(order.netProfit) }}</strong>
+              <strong
+                class="profit-strong"
+                :class="{ 'loss-text': Number(order.netProfit || 0) < 0 }"
+              >
+                {{ formatMoney(order.netProfit) }}
+              </strong>
             </td>
             <td class="text-muted">{{ order.completedAt || '-' }}</td>
           </tr>
@@ -797,7 +805,14 @@ onMounted(() => {
               <td><strong class="order-no-main">{{ stat.refunded }}건</strong></td>
               <td><span class="text-main">{{ stat.closedRate }}%</span></td>
               <td>{{ formatMoney(stat.sales) }}</td>
-              <td><strong class="profit-strong">{{ formatMoney(stat.profit) }}</strong></td>
+              <td>
+                <strong
+                  class="profit-strong"
+                  :class="{ 'loss-text': Number(stat.profit || 0) < 0 }"
+                >
+                  {{ formatMoney(stat.profit) }}
+                </strong>
+              </td>
             </tr>
             </tbody>
         </table>
@@ -1216,6 +1231,16 @@ onMounted(() => {
   background: #ecfdf5;
 }
 
+.summary-box.profit-loss-box {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.summary-box.profit-loss-box span,
+.summary-box.profit-loss-box strong {
+  color: #dc2626;
+}
+
 .summary-box span {
   display: block;
   margin-bottom: 10px;
@@ -1235,6 +1260,8 @@ onMounted(() => {
 .summary-box.cancel-box strong { color: #dc2626; }
 .summary-box.profit-box span { color: #166534; }
 .summary-box.profit-box strong { color: #15803d; }
+.summary-box.profit-loss-box span { color: #991b1b; }
+.summary-box.profit-loss-box strong { color: #dc2626; }
 
 .summary-box p {
   margin: 10px 0 0;
@@ -2194,4 +2221,11 @@ onMounted(() => {
   }
 }
 
+
+
+/* 예상 순수익이 음수인 경우 수익 숫자를 빨간색으로 강조한다. */
+.profit-strong.loss-text,
+.data-table .profit-strong.loss-text {
+  color: #dc2626;
+}
 </style>

@@ -12,6 +12,16 @@ const myAxios = axios.create({
   },
 });
 
+const moveToServerErrorPage = () => {
+  const currentPath = window.location.pathname;
+
+  if (currentPath === '/error') {
+    return;
+  }
+
+  window.location.assign('/error');
+};
+
 myAxios.interceptors.request.use(async (config) => {
   const authStore = useAuthStore();
   const authUrl = /^\/api\/auth\/(login|register|reissue-token|logout)$/;  
@@ -57,5 +67,22 @@ myAxios.interceptors.request.use(async (config) => {
   
   return config;
 });
+
+
+myAxios.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    const status = error.response?.status;
+    const shouldMoveToErrorPage = !error.response || status >= 500;
+
+    if (shouldMoveToErrorPage) {
+      moveToServerErrorPage();
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default myAxios;

@@ -17,6 +17,8 @@ import MockDataView from '../views/mock/MockDataView.vue';
 import AllReportView from '../views/report/AllReportView.vue';
 import ProfileView from '../views/profile/ProfileView.vue'; // 내 정보 뷰 임포트 추가
 import OrdersView from '../views/order/OrdersView.vue';
+import NotFoundView from '../views/error/NotFoundView.vue';
+import ServerErrorView from '../views/error/ServerErrorView.vue';
 
 /*
  * 라우트마다 사용할 meta 정보를 생성한다.
@@ -135,7 +137,35 @@ const routes = [
     path: '/profile',
     name: 'profile',
     component: ProfileView,
-    meta: { isAuthenticated: true, title: '내 정보',allowWithoutStore: true },
+    meta: { isAuthenticated: true, title: '내 정보', allowWithoutStore: true },
+  },
+
+  /*
+   * 서버 오류 화면
+   * 500 이상 서버 오류나 백엔드 연결 실패 시 이동한다.
+   */
+  {
+    path: '/error',
+    name: 'server-error',
+    component: ServerErrorView,
+    meta: { hideLayout: true },
+  },
+
+  /*
+   * 404 화면
+   * 등록되지 않은 주소 접근 시 표시한다.
+   */
+  {
+    path: '/not-found',
+    name: 'not-found',
+    component: NotFoundView,
+    meta: { hideLayout: true },
+  },
+
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'catch-all-not-found',
+    redirect: { name: 'not-found' },
   }
 ];
 

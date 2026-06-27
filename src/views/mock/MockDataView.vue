@@ -7,8 +7,7 @@ const axios = myAxios;
 
 // [일반 주문 생성] 상태
 const generalCnt = ref(1); 
-const generalScenario = ref('REQUEST_RISK'); // 요청사항 위험 시나리오 값
-const requestNoticeScenario = ref('ALLERGY'); // 요청사항 주의 시나리오 값
+const requestScenario = ref('ALLERGY'); // 요청사항 확인 시나리오 값
 
 // [지연 테스트 주문 생성] 상태 (캡처 이미지 시안에서는 제거되었으므로 내부 로직에서만 기본값 1 유지)
 const delayCnt = ref(1);
@@ -202,41 +201,28 @@ const deleteMockOrders = async () => {
       </section>
       <section class="mock-card">
         <div class="card-header">
-          <h2>요청사항 위험 주문</h2>
-          <p>분쟁 가능 요청을 포함합니다.</p>
-        </div>
-        <div class="card-body">
-          <div class="input-group">
-            <label>시나리오</label>
-            <select v-model="generalScenario" class="input-field select-field">
-              <option value="REQUEST_RISK">분쟁 가능 요청</option>
-              <option value="MIXED">랜덤 혼합</option>
-              <option value="GROUP">배달 시간 확인</option>
-            </select>
-          </div>
-        </div>
-        <div class="card-footer">
-          <button type="button" class="primary-button full-width-btn" @click="createScenario(generalScenario, '요청사항 위험')">요청사항 주문 생성</button>
-        </div>
-      </section>
-
-      <section class="mock-card">
-        <div class="card-header">
-          <h2>요청사항 주의 주문</h2>
+          <h2>요청사항 확인 주문</h2>
           <p>알러지, 배달사항, 고객 요청사항 확인 주문을 생성합니다.</p>
         </div>
         <div class="card-body">
           <div class="input-group">
-            <label>주의 유형</label>
-            <select v-model="requestNoticeScenario" class="input-field select-field">
+            <label>요청 유형</label>
+            <select v-model="requestScenario" class="input-field select-field">
               <option value="ALLERGY">알러지</option>
               <option value="GROUP">배달사항 확인</option>
               <option value="REQUEST_RISK">요청사항 확인</option>
+              <option value="MIXED">랜덤 혼합</option>
             </select>
           </div>
         </div>
         <div class="card-footer">
-          <button type="button" class="primary-button full-width-btn" @click="createScenario(requestNoticeScenario, '요청사항 주의')">요청사항 주의 주문 생성</button>
+          <button
+            type="button"
+            class="primary-button full-width-btn"
+            @click="createScenario(requestScenario, '요청사항 확인')"
+          >
+            요청사항 확인 주문 생성
+          </button>
         </div>
       </section>
 
@@ -353,7 +339,7 @@ const deleteMockOrders = async () => {
 }
 
 /* ============================================================
-   Mock Grid (2행 4열 8개 카드)
+   Mock Grid (요청사항 카드 통합)
    ============================================================ */
 .mock-grid {
   display: grid;

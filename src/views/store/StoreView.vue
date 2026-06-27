@@ -64,6 +64,48 @@ const isOvernightBusiness = computed(() => {
   return formData.closeTime <= formData.openTime;
 });
 
+const timeToMinutes = (time) => {
+  if (!time || !time.includes(':')) {
+    return null;
+  }
+
+  const [hour, minute] = time.split(':').map(Number);
+
+  if (
+    Number.isNaN(hour) ||
+    Number.isNaN(minute)
+  ) {
+    return null;
+  }
+
+  return hour * 60 + minute;
+};
+
+const businessDurationMinutes = computed(() => {
+  const openMinute = timeToMinutes(formData.openTime);
+  const closeMinute = timeToMinutes(formData.closeTime);
+
+  if (openMinute === null || closeMinute === null) {
+    return null;
+  }
+
+  if (openMinute === closeMinute) {
+    return 24 * 60;
+  }
+
+  if (closeMinute < openMinute) {
+    return (24 * 60 - openMinute) + closeMinute;
+  }
+
+  return closeMinute - openMinute;
+});
+
+const isShortBusinessTime = computed(() => {
+  return businessDurationMinutes.value !== null &&
+    businessDurationMinutes.value > 0 &&
+    businessDurationMinutes.value <= 60;
+});
+
 const businessTimeGuide = computed(() => {
   if (
     !formData.openTime ||
@@ -72,15 +114,21 @@ const businessTimeGuide = computed(() => {
     return '영업 시작 시간과 종료 시간을 입력하면 영업일 기준이 표시됩니다.';
   }
 
+  let guideMessage = '';
+
   if (formData.openTime === formData.closeTime) {
-    return `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 처리됩니다. 24시간 영업 설정입니다.`;
+    guideMessage = `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 처리됩니다. 24시간 영업 설정입니다.`;
+  } else if (formData.closeTime < formData.openTime) {
+    guideMessage = `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 처리됩니다.`;
+  } else {
+    guideMessage = `${formData.openTime}부터 당일 ${formData.closeTime}까지 영업으로 처리됩니다.`;
   }
 
-  if (formData.closeTime < formData.openTime) {
-    return `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 처리됩니다.`;
+  if (isShortBusinessTime.value) {
+    return `${guideMessage} 영업 시간이 1시간 이하로 매우 짧습니다. 저장 전 확인이 필요합니다.`;
   }
 
-  return `${formData.openTime}부터 당일 ${formData.closeTime}까지 영업으로 처리됩니다.`;
+  return guideMessage;
 });
 
 const bizNumParts = reactive({ part1: '', part2: '', part3: '' });
@@ -220,23 +268,38 @@ const validateStoreForm = () => {
     activeTab.value = 'basic';
     return false;
   }
+  const warningMessages = [];
+
   if (formData.closeTime <= formData.openTime) {
-  const guideMessage =
-    formData.openTime === formData.closeTime
-      ? `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 저장됩니다.\n24시간 영업 설정입니다.`
-      : `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 저장됩니다.`;
+    const guideMessage =
+      formData.openTime === formData.closeTime
+        ? `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 저장됩니다.
+24시간 영업 설정입니다.`
+        : `${formData.openTime}부터 다음날 ${formData.closeTime}까지 영업으로 저장됩니다.`;
 
-  const confirmed = confirm(
-    `영업 종료 시간이 시작 시간보다 빠르거나 같습니다.\n` +
-    `${guideMessage}\n\n` +
-    `이 설정으로 저장하시겠습니까?`
-  );
-
-  if (!confirmed) {
-    activeTab.value = 'basic';
-    return false;
+    warningMessages.push(
+      `영업 종료 시간이 시작 시간보다 빠르거나 같습니다.
+${guideMessage}`
+    );
   }
-}
+
+  if (isShortBusinessTime.value) {
+    warningMessages.push(
+      `영업 시간이 ${businessDurationMinutes.value}분으로 매우 짧습니다.
+브레이크타임이 아니라 실제 영업시간이 맞는지 확인해주세요.`
+    );
+  }
+
+  if (warningMessages.length > 0) {
+    const confirmed = confirm(
+      `${warningMessages.join('\n\n')}\n\n이 설정으로 저장하시겠습니까?`
+    );
+
+    if (!confirmed) {
+      activeTab.value = 'basic';
+      return false;
+    }
+  }
 
   if (!formData.operationStatus) {
     alert('매장 운영 상태를 선택해주세요.');
@@ -609,7 +672,7 @@ const handleOperationSubmit = async () => {
         </div>
         <p
           class="business-time-guide full-width"
-            :class="{ overnight: isOvernightBusiness }"
+            :class="{ overnight: isOvernightBusiness, short: isShortBusinessTime }"
         >
             {{ businessTimeGuide }}
         </p>
@@ -769,6 +832,12 @@ const handleOperationSubmit = async () => {
   border-color: #fed7aa;
   background-color: #fff7ed;
   color: #9a3412;
+}
+
+.business-time-guide.short {
+  border-color: #fecaca;
+  background-color: #fff7f7;
+  color: #b91c1c;
 }
 .page-section {
   max-width: 100%;

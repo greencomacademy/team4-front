@@ -1243,7 +1243,10 @@ const saveReason = async () => {
             <strong>+{{ formatMoney(selectedOrder.platformSupportAmount) }}</strong>
           </div>
 
-          <div class="cost-row total">
+          <div
+            class="cost-row total"
+            :class="{ negative: Number(selectedOrder.netProfit || 0) < 0 }"
+          >
             <span>예상 순수익</span>
             <strong>{{ formatMoney(selectedOrder.netProfit) }}</strong>
           </div>
@@ -1854,6 +1857,7 @@ const saveReason = async () => {
 }
 .cost-row.total { margin-top: 6px; padding-top: 16px; border-bottom: 0; border-top: 1px solid #dbe3ee; font-weight: 900; }
 .cost-row.total strong { color: #15803d; font-size: 19px; }
+.cost-row.total.negative strong { color: #dc2626; }
 
 /* 요청사항 / 취소 가이드 영역 */
 .request-guide, .cancel-history, .refund-history { padding: 16px; margin-top: 18px; border-radius: 14px; background: #f8fafc; }
