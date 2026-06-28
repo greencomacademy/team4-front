@@ -1,12 +1,68 @@
 <script setup>
-import { reactive } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { useAuthStore } from '../../stores/auth/useAuthStore.js';
 
-// UI 확인용 더미 데이터 (실제 구현 시 API 연동 또는 Pinia authStore 등에서 가져옵니다)
+const authStore = useAuthStore();
+
+const isLoading = ref(false);
+const isSaving = ref(false);
+const originalEmail = ref('');
+
 const userInfo = reactive({
-  name: '테스트 점주',
-  email: 'owner@test.com',
-  storeName: 'DeliveryInsider Kitchen',
-  role: 'OWNER'
+  email: '',
+  storeName: '',
+});
+
+const isEmailChanged = computed(() => {
+  return userInfo.email.trim() !== originalEmail.value;
+});
+
+const findMyProfile = async () => {
+  try {
+    isLoading.value = true;
+    const profile = await authStore.fetchMyProfile();
+
+    userInfo.email = profile?.email || '';
+    userInfo.storeName = profile?.storeName || '등록된 매장 없음';
+    originalEmail.value = userInfo.email;
+  } catch (error) {
+    alert('내 정보 조회에 실패했습니다.');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const saveEmail = async () => {
+  const email = userInfo.email.trim();
+
+  if (!email) {
+    alert('이메일을 입력해 주세요.');
+    return;
+  }
+
+  try {
+    isSaving.value = true;
+    const profile = await authStore.updateMyEmail(email);
+
+    userInfo.email = profile?.email || email;
+    userInfo.storeName = profile?.storeName || '등록된 매장 없음';
+    originalEmail.value = userInfo.email;
+
+    alert('이메일이 수정되었습니다.');
+  } catch (error) {
+    const message =
+      error.response?.data?.data ||
+      error.response?.data?.message ||
+      '이메일 수정에 실패했습니다.';
+
+    alert(message);
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+onMounted(async () => {
+  await findMyProfile();
 });
 </script>
 
@@ -14,43 +70,72 @@ const userInfo = reactive({
   <section class="page-section">
     <div class="section-title-row">
       <h1 class="main-title">내 정보</h1>
-      <p class="sub-desc">헤더의 내 정보 버튼에서 진입하는 화면입니다.</p>
+      <p class="sub-desc">1차 범위에서는 이메일과 연결 매장 정보를 백엔드에서 조회합니다.</p>
     </div>
 
     <article class="card">
       <div class="card-header">
         <div class="title-area">
           <h3>계정 정보</h3>
-          <p class="required-note">UI 확인용 더미 데이터</p>
+          <p class="required-note">이메일은 수정 가능하며, 연결 매장은 매장 관리에서 변경합니다.</p>
         </div>
         <div class="badge success">운영 계정</div>
       </div>
 
-      <form class="grid-form" @submit.prevent>
-        <div class="input-group">
-          <label>이름</label>
-          <input type="text" :value="userInfo.name" readonly />
-        </div>
-        
+      <form class="grid-form" @submit.prevent="saveEmail">
         <div class="input-group">
           <label>이메일</label>
-          <input type="text" :value="userInfo.email" readonly />
+          <input
+            v-model="userInfo.email"
+            type="email"
+            :disabled="isLoading || isSaving"
+            placeholder="이메일을 입력하세요"
+          />
         </div>
         
         <div class="input-group">
           <label>연결 매장</label>
           <input type="text" :value="userInfo.storeName" readonly />
         </div>
-        
-        <div class="input-group">
-          <label>권한</label>
-          <input type="text" :value="userInfo.role" readonly />
-        </div>
 
         <div class="info-banner full-width">
-          실제 구현 시 회원 정보 조회 API와 연결하면 됩니다.
+          이름, 권한, 비밀번호 변경, 회원탈퇴는 2차 기능으로 분리했습니다.
+        </div>
+
+        <div class="profile-actions full-width">
+          <button
+            type="button"
+            class="secondary-button"
+            :disabled="isLoading || isSaving"
+            @click="findMyProfile"
+          >
+            새로고침
+          </button>
+          <button
+            type="submit"
+            class="primary-button"
+            :disabled="!isEmailChanged || isLoading || isSaving"
+          >
+            {{ isSaving ? '저장 중...' : '이메일 저장' }}
+          </button>
         </div>
       </form>
+    </article>
+
+    <article class="card second-card">
+      <div class="card-header compact">
+        <div class="title-area">
+          <h3>2차 예정 기능</h3>
+          <p class="required-note">DB 컬럼과 정책이 확정된 뒤 연결할 기능입니다.</p>
+        </div>
+      </div>
+
+      <div class="future-list">
+        <span>이름 관리</span>
+        <span>권한 표시</span>
+        <span>비밀번호 변경</span>
+        <span>회원탈퇴</span>
+      </div>
     </article>
   </section>
 </template>
@@ -94,11 +179,19 @@ const userInfo = reactive({
   box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
 }
 
+.second-card {
+  margin-top: 22px;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 30px;
+}
+
+.card-header.compact {
+  margin-bottom: 18px;
 }
 
 .title-area h3 {
@@ -162,7 +255,11 @@ const userInfo = reactive({
   outline: none;
   width: 100%;
   box-sizing: border-box;
-  cursor: default; /* readonly 요소이므로 커서 변경 */
+}
+
+.grid-form input[readonly] {
+  background: #f8fafc;
+  cursor: default;
 }
 
 .grid-form input:focus {
@@ -184,6 +281,57 @@ const userInfo = reactive({
   margin-top: 10px;
 }
 
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-button {
+  border: 1px solid #2784B8;
+  background: #2784B8;
+  color: #ffffff;
+}
+
+.secondary-button {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.future-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.future-list span {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 15px;
+  font-weight: 800;
+}
+
 /* =======================================
    반응형 (Mobile)
 ======================================= */
@@ -202,6 +350,10 @@ const userInfo = reactive({
   
   .full-width { 
     grid-column: span 1; 
+  }
+
+  .profile-actions {
+    flex-direction: column;
   }
 }
 </style>

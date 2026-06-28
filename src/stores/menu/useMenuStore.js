@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import myAxios from '../../api/MyAxios';
+import myAxios from '../../api/myAxios.js';
 
 export const useMenuStore = defineStore('menu', () => {
   const menuList = ref([]);
+  const lossDismissals = ref([]);
 // 2. 액션 (Actions)
   // [조회] 메뉴 목록 및 마진 분석 데이터 불러오기 (GET)
   const fetchMenus = async () => {
@@ -17,6 +18,45 @@ export const useMenuStore = defineStore('menu', () => {
     } catch (error) {
       console.warn("메뉴 목록을 불러오지 못했습니다.", error);
       menuList.value = []; // 에러 시 빈 배열로 초기화하여 화면 깨짐 방지
+    }
+  };
+
+  // 숨은 손실 메뉴 확인 완료 목록 조회
+  const fetchLossDismissals = async () => {
+    try {
+      const result = await myAxios.get('/api/menus/loss-dismissals');
+      lossDismissals.value = result.data.data || [];
+      return lossDismissals.value;
+    } catch (error) {
+      console.warn('숨은 손실 메뉴 확인 완료 목록을 불러오지 못했습니다.', error);
+      lossDismissals.value = [];
+      return [];
+    }
+  };
+
+  // 숨은 손실 메뉴 7일간 확인 완료 처리
+  const dismissLossMenu = async (menuId, hideDays = 7) => {
+    try {
+      await myAxios.post(`/api/menus/${menuId}/loss-dismissal`, {
+        hideDays,
+      });
+
+      await fetchLossDismissals();
+    } catch (error) {
+      console.error('숨은 손실 메뉴 확인 완료 처리 실패:', error);
+      throw error;
+    }
+  };
+
+  // 확인 완료한 숨은 손실 메뉴 다시 표시
+  const restoreLossMenu = async (menuId) => {
+    try {
+      await myAxios.delete(`/api/menus/${menuId}/loss-dismissal`);
+
+      await fetchLossDismissals();
+    } catch (error) {
+      console.error('숨은 손실 메뉴 다시 표시 실패:', error);
+      throw error;
     }
   };
 
@@ -42,7 +82,8 @@ export const useMenuStore = defineStore('menu', () => {
       await myAxios.post(url, menuData);
       
       // 등록이 성공하면 서버에서 최신 목록을 다시 불러와 화면을 갱신합니다.
-      await fetchMenus(); 
+      await fetchMenus();
+      await fetchLossDismissals();
     } catch (error) {
       console.error("메뉴 등록 실패:", error);
       throw error; // 에러를 컴포넌트로 던져서 컴포넌트가 처리하도록 함
@@ -56,7 +97,8 @@ export const useMenuStore = defineStore('menu', () => {
       await myAxios.patch(url, updateData);
       
       // 수정이 성공하면 서버에서 최신 목록을 다시 불러옵니다.
-      await fetchMenus(); 
+      await fetchMenus();
+      await fetchLossDismissals();
     } catch (error) {
       console.error("메뉴 수정 실패:", error);
       throw error;
@@ -70,7 +112,8 @@ export const useMenuStore = defineStore('menu', () => {
       await myAxios.delete(url);
       
       // 삭제가 성공하면 서버에서 최신 목록을 다시 불러옵니다.
-      await fetchMenus(); 
+      await fetchMenus();
+      await fetchLossDismissals();
     } catch (error) {
       console.error("메뉴 삭제 실패:", error);
       throw error;
@@ -80,10 +123,14 @@ export const useMenuStore = defineStore('menu', () => {
   return {
     // state
     menuList,
+    lossDismissals,
     
     // actions
     fetchMenus,
     getAllMenus,
+    fetchLossDismissals,
+    dismissLossMenu,
+    restoreLossMenu,
     createMenu,
     updateMenu,
     deleteMenu

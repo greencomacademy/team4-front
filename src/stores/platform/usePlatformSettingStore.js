@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
-import myAxios from '../../api/myAxios';
+import myAxios from '../../api/myAxios.js';
 
 export const usePlatformSettingStore = defineStore('platformSetting', () => {
   /*

@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue';
 import { defineStore } from "pinia";
-import myAxios from "../../api/myAxios";
+import myAxios from "../../api/myAxios.js";
 
 // 매장관리 스토어
 export const useStoreStore = defineStore('store',() => {

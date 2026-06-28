@@ -1,0 +1,86 @@
+/* ============================================================
+   DeliveryInsider 전역 CSS
+   - 전역 CSS 진입 파일은 main.css 하나로 통일한다.
+   - main.js에서 import './main.css'로 불러온다.
+   - 각 Vue 파일의 scoped CSS는 화면 전용 스타일이므로 그대로 유지한다.
+   ============================================================ */
+
+:root {
+  --di-font-normal: 500;
+  --di-font-medium: 600;
+  --di-font-bold: 700;
+  --di-font-heavy: 800;
+  --di-placeholder: #aebccd;
+}
+
+* ,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+/* Placeholder는 실제 입력값보다 연하게 보이게 한다. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--di-placeholder) !important;
+  opacity: 1 !important;
+  font-weight: 400 !important;
+}
+
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+  color: var(--di-placeholder) !important;
+  opacity: 1 !important;
+  font-weight: 400 !important;
+}
+
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+  color: var(--di-placeholder) !important;
+  opacity: 1 !important;
+  font-weight: 400 !important;
+}
+
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder {
+  color: var(--di-placeholder) !important;
+  opacity: 1 !important;
+  font-weight: 400 !important;
+}
+
+input:focus::placeholder,
+textarea:focus::placeholder {
+  color: #c7d2df !important;
+}
+
+/* number input 기본 위/아래 스피너 제거 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* 금액/날짜는 가능하면 줄바꿈을 피한다. */
+.no-wrap,
+.money-text,
+.date-text {
+  white-space: nowrap;
+}

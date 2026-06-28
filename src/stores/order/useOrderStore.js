@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import myAxios from '../../api/myAxios';
+import myAxios from '../../api/myAxios.js';
 
 export const useOrderStore = defineStore('order', () => {
   /*
@@ -12,6 +12,11 @@ export const useOrderStore = defineStore('order', () => {
    * 주문 상세 응답
    */
   const orderDetail = ref(null);
+
+  /*
+   * 지연 위험 주문 목록
+   */
+  const delayRiskList = ref([]);
 
   /*
    * 목록 조회 중 여부
@@ -28,10 +33,6 @@ export const useOrderStore = defineStore('order', () => {
    *
    * 호출 API:
    * GET /api/orders/today
-   *
-   * query 예:
-   * ?platformType=BAEMIN
-   * ?orderStatus=WAITING
    */
   const findToday = async (params = {}) => {
     try {
@@ -75,22 +76,31 @@ export const useOrderStore = defineStore('order', () => {
   };
 
   /*
+   * 지연 위험 주문 조회
+   *
+   * 호출 API:
+   * GET /api/orders/delay-risks
+   */
+  const findDelayRisks = async () => {
+    try {
+      const result =
+        await myAxios.get('/api/orders/delay-risks');
+
+      delayRiskList.value = result.data.data || [];
+
+      return delayRiskList.value;
+    } catch (error) {
+      console.error(error);
+      alert('지연 위험 주문 조회에 실패했습니다.');
+      throw error;
+    }
+  };
+
+  /*
    * 주문 상태 변경
    *
    * 호출 API:
    * PATCH /api/orders/{orderId}/status
-   *
-   * 일반 상태 변경 payload:
-   * {
-   *   orderStatus: 'COOKING'
-   * }
-   *
-   * 취소 payload:
-   * {
-   *   orderStatus: 'CANCELED',
-   *   cancelType: 'CUSTOMER_REQUEST',
-   *   cancelReason: '고객 요청으로 취소'
-   * }
    */
   const updateStatus = async (
     orderId,
@@ -105,9 +115,7 @@ export const useOrderStore = defineStore('order', () => {
           payload
         );
 
-      const updatedOrder = result.data.data;
-
-      return updatedOrder;
+      return result.data.data;
     } catch (error) {
       console.error(error);
       alert('주문 상태 변경에 실패했습니다.');
@@ -120,6 +128,7 @@ export const useOrderStore = defineStore('order', () => {
   const clearOrders = () => {
     orderList.value = [];
     orderDetail.value = null;
+    delayRiskList.value = [];
     isLoading.value = false;
     changingOrderId.value = null;
   };
@@ -127,11 +136,13 @@ export const useOrderStore = defineStore('order', () => {
   return {
     orderList,
     orderDetail,
+    delayRiskList,
     isLoading,
     changingOrderId,
 
     findToday,
     findOne,
+    findDelayRisks,
     updateStatus,
     clearOrders,
   };

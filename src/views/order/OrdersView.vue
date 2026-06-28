@@ -1,6 +1,6 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useOrderStore } from '../../stores/order/useOrderStore';
 
 // 필터 상태 관리
@@ -9,11 +9,18 @@ const selectedStatus = ref('');
 const selectedAttention = ref(''); // 확인 필요(위험) 필터 추가
 const searchKeyword = ref('');
 
+const route = useRoute();
 const router = useRouter();
 const orderStore = useOrderStore();
 
+const selectedActiveOnly = ref(false);
+
+const currentPage = ref(1);
+const pageSize = 10;
+
 // 선택된 주문 상세
 const selectedOrder = ref(null);
+const detailPanelRef = ref(null);
 
 // 요약 카드 모달 상태
 const isStatusModalOpen = ref(false);
@@ -29,6 +36,22 @@ const reasonInput = ref('');
 // 1. 화면 구조 확인용 임시 주문 데이터 (HTML 시안과 동일한 데이터 속성 반영)
 const orders = ref([]);
 
+// 오늘 주문 관리에서 실제로 점주가 처리해야 하는 진행 상태
+const activeOrderStatuses = ['WAITING', 'COOKING', 'DELIVERING'];
+const requestAttentionStatuses = ['WAITING'];
+
+const isActiveOrder = (order) => {
+  return activeOrderStatuses.includes(order.orderStatus);
+};
+
+const isRequestAttentionOrder = (order) => {
+  return requestAttentionStatuses.includes(order.orderStatus);
+};
+
+const refreshHeaderNotifications = () => {
+  window.dispatchEvent(new CustomEvent('deliveryinsider:notifications-refresh'));
+};
+
 // 2. 검색 및 필터 로직 (확인 필요 필터 추가)
 const filteredOrders = computed(() => {
   return orders.value.filter((order) => {
@@ -42,18 +65,22 @@ const filteredOrders = computed(() => {
       !selectedStatus.value ||
       order.orderStatus === selectedStatus.value;
 
+    const activeMatched =
+      !selectedActiveOnly.value ||
+      ['WAITING', 'COOKING', 'DELIVERING'].includes(order.orderStatus);
+
     let attentionMatched = true;
 
     if (selectedAttention.value === 'REQUEST') {
-      attentionMatched = riskBadges.length > 0;
+      attentionMatched = isRequestAttentionOrder(order) && riskBadges.length > 0;
     }
 
     if (selectedAttention.value === 'DELAY') {
-      attentionMatched = order.delayRiskLevel !== 'SAFE';
+      attentionMatched = isActiveOrder(order) && order.delayRiskLevel !== 'SAFE';
     }
 
     if (selectedAttention.value === 'LOSS') {
-      attentionMatched = order.lossRisk;
+      attentionMatched = isActiveOrder(order) && order.lossRisk;
     }
 
     if (selectedAttention.value === 'CANCEL') {
@@ -74,7 +101,67 @@ const filteredOrders = computed(() => {
       String(order.deliveryAddress || '').toLowerCase().includes(keyword) ||
       String(order.requestText || '').toLowerCase().includes(keyword);
 
-    return platformMatched && statusMatched && attentionMatched && keywordMatched;
+    return platformMatched && statusMatched && activeMatched && attentionMatched && keywordMatched;
+  });
+});
+
+const totalPages = computed(() => {
+  return Math.max(
+    1,
+    Math.ceil(filteredOrders.value.length / pageSize)
+  );
+});
+
+const pagedOrders = computed(() => {
+  const startIndex =
+    (currentPage.value - 1) * pageSize;
+
+  return filteredOrders.value.slice(
+    startIndex,
+    startIndex + pageSize
+  );
+});
+
+const pageNumbers = computed(() => {
+  return Array.from(
+    { length: totalPages.value },
+    (_, index) => index + 1
+  );
+});
+
+const changePage = async (page) => {
+  if (page < 1 || page > totalPages.value) {
+    return;
+  }
+
+  currentPage.value = page;
+
+  const firstOrder = pagedOrders.value[0];
+
+  if (firstOrder) {
+    await selectOrder(firstOrder);
+  }
+};
+
+watch(
+  [
+    selectedPlatform,
+    selectedStatus,
+    selectedAttention,
+    selectedActiveOnly,
+    searchKeyword,
+  ],
+  () => {
+    currentPage.value = 1;
+  }
+);
+
+
+// 요청사항 확인은 접수대기 주문만 대상으로 삼는다.
+// 조리 시작 이후에는 점주가 요청사항을 확인하고 접수한 것으로 보고 알림에서 제외한다.
+const requestAttentionOrders = computed(() => {
+  return orders.value.filter((order) => {
+    return isRequestAttentionOrder(order) && (order.riskBadges || []).length > 0;
   });
 });
 
@@ -84,7 +171,7 @@ const operationSummary = computed(() => {
     waitingCount: orders.value.filter((o) => o.orderStatus === 'WAITING').length,
     cookingCount: orders.value.filter((o) => o.orderStatus === 'COOKING').length,
     deliveringCount: orders.value.filter((o) => o.orderStatus === 'DELIVERING').length,
-    requestRiskCount: orders.value.filter((o) => (o.riskBadges || []).length > 0).length,
+    requestRiskCount: requestAttentionOrders.value.length,
   };
 });
 
@@ -97,14 +184,14 @@ const statusModalTitle = computed(() => {
     WAITING: '접수대기 주문',
     COOKING: '조리중 주문',
     DELIVERING: '배달중 주문',
-    REQUEST_RISK: '요구사항 확인 필요',
+    REQUEST_RISK: '요청사항 확인 필요',
   };
   return titles[selectedSummaryType.value] || '주문 목록';
 });
 
 const statusModalOrders = computed(() => {
   if (selectedSummaryType.value === 'REQUEST_RISK') {
-    return orders.value.filter((order) => (order.riskBadges || []).length > 0);
+    return requestAttentionOrders.value;
   }
   return orders.value.filter((order) => order.orderStatus === selectedSummaryType.value);
 });
@@ -114,12 +201,12 @@ const getPlatformName = (type) => ({ BAEMIN: '배민', COUPANG_EATS: '쿠팡이�
 const getPlatformClass = (type) => ({ BAEMIN: 'baemin', COUPANG_EATS: 'coupang', YOGIYO: 'yogiyo', DDANGYO: 'ddangyo' }[type] || 'default');
 const getOrderStatusName = (status) => ({ WAITING: '접수대기', COOKING: '조리중', DELIVERING: '배달중', COMPLETED: '완료', CANCELED: '취소', REFUNDED: '환불' }[status] || status);
 const getDelayRiskName = (level) => ({ SAFE: '정상', WARNING: '주의', DELAYED: '지연' }[level] || level);
-const formatMoney = (amount) => `${Number(amount || 0).toLocaleString('ko-KR')}원`;
+const formatMoney = (amount) => `${Number(amount || 0).toLocaleString('ko-KR')} 원`;
 const formatTime = (dateTime) => {
   if (!dateTime) {
     return '';
   }
-// 백엔드와 연동
+
   const date = new Date(dateTime);
 
   if (Number.isNaN(date.getTime())) {
@@ -133,33 +220,70 @@ const formatTime = (dateTime) => {
   });
 };
 
+// 최신 주문 정렬 기준값
+const getOrderSortValue = (order) => {
+  const rawDateTime =
+    order.orderedAtRaw ||
+    order.orderedAt ||
+    '';
+
+  const time = new Date(rawDateTime).getTime();
+
+  if (!Number.isNaN(time)) {
+    return time;
+  }
+
+  return Number(order.id || 0);
+};
+
+// 최신 주문이 앞쪽 페이지, 이전 주문이 뒤쪽 페이지로 가게 정렬
+const sortFifoOrders = (orderList) => {
+  return [...orderList].sort((a, b) => {
+    return getOrderSortValue(b) - getOrderSortValue(a);
+  });
+};
+
+const REQUEST_ATTENTION_TYPES = [
+  'ALLERGY',
+  'DISPUTE',
+  'EXCESSIVE',
+  'GROUP',
+  'REQUEST',
+  'REQUEST_RISK',
+];
+
+const REQUEST_ATTENTION_LEVELS = ['WARNING', 'DANGER'];
+
+const normalizeRiskValue = (value) => {
+  return String(value || '').trim().toUpperCase();
+};
+
 const getRiskBadges = (order) => {
   const badges = [];
+  const riskType = normalizeRiskValue(order.requestRiskType);
+  const riskLevel = normalizeRiskValue(order.requestRiskLevel);
 
-  if (order.requestRiskType === 'ALLERGY') {
+  if (riskType === 'ALLERGY') {
     badges.push('알러지 주의');
   }
 
-  if (order.requestRiskType === 'DISPUTE') {
+  if (riskType === 'DISPUTE') {
     badges.push('분쟁 가능');
   }
 
-  if (order.requestRiskType === 'EXCESSIVE') {
+  if (riskType === 'EXCESSIVE') {
     badges.push('과도 요청');
   }
 
-  if (
-    order.requestRiskLevel === 'WARNING' &&
-    badges.length === 0
-  ) {
-    badges.push('요구사항 확인');
+  if (riskType === 'GROUP') {
+    badges.push('배달사항 확인');
   }
 
   if (
-    order.requestRiskLevel === 'DANGER' &&
-    badges.length === 0
+    ['REQUEST', 'REQUEST_RISK'].includes(riskType) ||
+    (REQUEST_ATTENTION_LEVELS.includes(riskLevel) && badges.length === 0)
   ) {
-    badges.push('위험 요청');
+    badges.push(riskLevel === 'DANGER' ? '위험 요청' : '요청사항 확인');
   }
 
   if (Number(order.netProfit || 0) < 0) {
@@ -188,6 +312,7 @@ const toOrderViewData = (order) => {
      */
     delayRiskLevel: 'SAFE',
 
+    orderedAtRaw : order.orderedAt,
     orderedAt: formatTime(order.orderedAt),
     cookingStartedAt: formatTime(order.cookingStartedAt),
     completedAt: '',
@@ -243,7 +368,8 @@ const toOrderDetailViewData = (detail, baseOrder = {}) => {
 
     totalCookingTime: detail.totalCookingTime,
     deliveryAddress: detail.deliveryAddress,
-
+    
+    orderedAtRaw: detail.orderedAt || baseOrder.orderedAtRaw || '',
     orderedAt: formatTime(detail.orderedAt),
     cookingStartedAt: formatTime(detail.cookingStartedAt),
     completedAt: formatTime(detail.completedAt),
@@ -308,7 +434,7 @@ const toOrderDetailViewData = (detail, baseOrder = {}) => {
 };
 const shortAddress = (address) => address && address.length > 18 ? `${address.slice(0, 18)}...` : address || '-';
 
-// 요구사항 주의 안내 문구 생성
+// 요청사항 주의 안내 문구 생성
 const getRequestAttentionMessage = (order) => {
   const badges = order.riskBadges || [];
   if (badges.includes('알러지 주의')) return '알러지 관련 단어가 포함되어 있습니다. 조리 전 재료와 제외 요청을 먼저 확인하세요.';
@@ -317,26 +443,67 @@ const getRequestAttentionMessage = (order) => {
   if (badges.includes('배달 전달 주의')) return '전달 방식이나 시간 관련 요청이 포함되어 있습니다.';
   return '';
 };
+const applyRouteQueryFilters = () => {
+  const query = route.query;
+
+  selectedPlatform.value = String(query.platform || '');
+  selectedStatus.value = String(query.status || '');
+  selectedAttention.value = String(query.attention || query.filter || '');
+  selectedActiveOnly.value = query.active === 'true';
+
+  if (query.keyword) {
+    searchKeyword.value = String(query.keyword);
+  }
+};
 // 주문목록조회
 const loadTodayOrders = async () => {
   try {
-    const params = {};
+    const [
+      todayResult,
+      delayRiskResult,
+    ] = await Promise.all([
+      orderStore.findToday(),
+      orderStore.findDelayRisks(),
+    ]);
 
-    if (selectedPlatform.value) {
-      params.platformType = selectedPlatform.value;
-    }
+    const delayRiskMap = new Map(
+      delayRiskResult.map((delayOrder) => {
+        return [delayOrder.id, delayOrder];
+      })
+    );
 
-    if (selectedStatus.value) {
-      params.orderStatus = selectedStatus.value;
-    }
+    orders.value = sortFifoOrders(
+      todayResult.map((order) => {
+        const viewOrder = toOrderViewData(order);
+        const delayInfo = delayRiskMap.get(order.id);
 
-    const result =
-      await orderStore.findToday(params);
+        return {
+          ...viewOrder,
+          delayRiskLevel:
+            delayInfo?.delayRiskLevel ||
+            viewOrder.delayRiskLevel ||
+            'SAFE',
 
-    orders.value = result.map(toOrderViewData);
+          elapsedMinutes:
+            delayInfo?.elapsedMinutes ||
+            0,
 
-    if (orders.value.length > 0) {
-      await selectOrder(orders.value[0]);
+          progressRate:
+            delayInfo?.progressRate ||
+            0,
+        };
+      })
+    );
+
+    const routeOrderId = Number(route.query.id || 0);
+
+    const targetOrder =
+      routeOrderId
+        ? orders.value.find((order) => Number(order.id) === routeOrderId)
+        : pagedOrders.value[0] || orders.value[0];
+
+    if (targetOrder) {
+      await selectOrder(targetOrder);
     } else {
       selectedOrder.value = null;
     }
@@ -346,17 +513,47 @@ const loadTodayOrders = async () => {
 };
 
 onMounted(async () => {
+  applyRouteQueryFilters();
   await loadTodayOrders();
 });
 
+/*
+ * 같은 OrdersView 안에서 query만 바뀌는 이동을 처리한다.
+ * 예: /orders?active=true → /orders
+ * Vue Router는 같은 컴포넌트를 재사용하므로 onMounted가 다시 실행되지 않는다.
+ */
+watch(
+  () => route.fullPath,
+  async () => {
+    applyRouteQueryFilters();
+    currentPage.value = 1;
 
+    if (!orders.value.length) {
+      await loadTodayOrders();
+      return;
+    }
+
+    const routeOrderId = Number(route.query.id || 0);
+    const targetOrder = routeOrderId
+      ? orders.value.find((order) => Number(order.id) === routeOrderId)
+      : pagedOrders.value[0] || orders.value[0];
+
+    if (targetOrder) {
+      await selectOrder(targetOrder);
+    } else {
+      selectedOrder.value = null;
+    }
+  }
+);
 
 // 필터 및 주문 선택 조작
 const clearFilters = () => {
   selectedPlatform.value = '';
   selectedStatus.value = '';
   selectedAttention.value = '';
+  selectedActiveOnly.value = false;
   searchKeyword.value = '';
+  currentPage.value = 1;
 };
 
 const selectOrder = async (order) => {
@@ -372,7 +569,27 @@ const selectOrder = async (order) => {
   }
 };
 
+const scrollToDetailPanel = async () => {
+  await nextTick();
+
+  if (!detailPanelRef.value) {
+    return;
+  }
+
+  detailPanelRef.value.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  });
+};
+
+const selectOrderAndScroll = async (order) => {
+  await selectOrder(order);
+  await scrollToDetailPanel();
+};
+
 const setOrderFilter = (type, value) => {
+  selectedActiveOnly.value = false;
+
   if (type === 'status') {
     selectedStatus.value = value;
     selectedAttention.value = '';
@@ -380,6 +597,7 @@ const setOrderFilter = (type, value) => {
     selectedAttention.value = value;
     selectedStatus.value = '';
   }
+  currentPage.value = 1;
   closeStatusModal();
 };
 
@@ -393,8 +611,8 @@ const closeStatusModal = () => {
   selectedSummaryType.value = '';
 };
 
-const openDetailFromModal = (order) => {
-  selectOrder(order);
+const openDetailFromModal = async (order) => {
+  await selectOrderAndScroll(order);
   closeStatusModal();
 };
 
@@ -406,7 +624,7 @@ const cancelPresets = [
   '고객 요청',
   '재료 소진',
   '조리 지연',
-  '요구사항 처리 불가',
+  '요청사항 처리 불가',
   '배달 문제',
   '기타',
 ];
@@ -463,7 +681,7 @@ const getCancelTypeValue = (label) => {
     '고객 요청': 'CUSTOMER_REQUEST',
     '재료 소진': 'OUT_OF_STOCK',
     '조리 지연': 'COOKING_DELAY',
-    '요구사항 처리 불가': 'REQUEST_UNAVAILABLE',
+    '요청사항 처리 불가': 'REQUEST_UNAVAILABLE',
     '배달 문제': 'DELIVERY_ISSUE',
     '기타': 'ETC',
   }[label] || 'ETC';
@@ -499,6 +717,7 @@ const applyUpdatedOrder = (updatedDetail, baseOrder = {}) => {
 
   if (index !== -1) {
     orders.value[index] = updatedOrder;
+    orders.value = sortFifoOrders(orders.value);
   }
 
   return updatedOrder;
@@ -521,6 +740,7 @@ const changeOrderStatus = async (order) => {
       );
 
     applyUpdatedOrder(updatedDetail, order);
+    refreshHeaderNotifications();
   } catch (error) {
     console.error('주문 상태 변경 실패:', error);
   }
@@ -607,6 +827,7 @@ const saveReason = async () => {
 
     applyUpdatedOrder(updatedDetail, order);
     closeReasonModal();
+    refreshHeaderNotifications();
   } catch (error) {
     console.error(
       reasonMode.value === 'REFUND'
@@ -648,13 +869,13 @@ const saveReason = async () => {
     <section v-if="latestWaitingOrder" class="new-order-section">
       <div class="new-order-head">
         <div>
-          <span class="new-label">신규 주문</span>
+          <span class="new-label">다음 접수 주문</span>
           <strong>{{ getPlatformName(latestWaitingOrder.platformType) }} {{ latestWaitingOrder.platformOrderNo }}</strong>
         </div>
         <span class="queue-badge">접수대기 {{ operationSummary.waitingCount }}건</span>
       </div>
 
-      <div class="new-order-body">
+      <div class="new-order-body new-order-split">
         <div class="new-order-main">
           <h2>{{ latestWaitingOrder.menuSummary }}</h2>
           <p>
@@ -664,8 +885,38 @@ const saveReason = async () => {
           </p>
         </div>
 
+        <div
+          class="new-order-request-box"
+          :class="{ attention: (latestWaitingOrder.riskBadges || []).length > 0 }"
+        >
+          <span>요청사항</span>
+          <strong>
+            {{ latestWaitingOrder.requestText || '요청사항 없음' }}
+          </strong>
+
+          <small v-if="(latestWaitingOrder.riskBadges || []).length">
+            {{ latestWaitingOrder.riskBadges.join(' · ') }}
+          </small>
+        </div>
+
         <div class="new-order-actions">
-          <button type="button" class="sub-button" @click="selectOrder(latestWaitingOrder)">주문 상세</button>
+          <button
+            type="button"
+            class="sub-button"
+            @click="selectOrderAndScroll(latestWaitingOrder)"
+          >
+            주문 상세
+          </button>
+
+          <button
+            type="button"
+            class="sub-button danger-outline"
+            :disabled="orderStore.changingOrderId === latestWaitingOrder.id"
+            @click="openReasonModal('CANCEL', latestWaitingOrder)"
+          >
+            주문 취소
+          </button>
+
           <button
             type="button"
             class="primary-button"
@@ -712,7 +963,7 @@ const saveReason = async () => {
           <small>ATTENTION</small>
         </div>
         <strong>{{ operationSummary.requestRiskCount }}건</strong>
-        <p>알러지·분쟁 가능 요청</p>
+        <p>확인이 필요한 요청사항</p>
       </article>
     </section>
 
@@ -745,7 +996,7 @@ const saveReason = async () => {
         <label>확인 필요</label>
         <select v-model="selectedAttention" @change="selectedStatus = ''">
           <option value="">전체</option>
-          <option value="REQUEST">요구사항 확인</option>
+          <option value="REQUEST">요청사항 확인</option>
           <option value="DELAY">지연 위험</option>
           <option value="LOSS">손실 위험</option>
           <option value="CANCEL">취소 이력</option>
@@ -755,7 +1006,7 @@ const saveReason = async () => {
 
       <div class="filter-group grow">
         <label>검색</label>
-        <input v-model="searchKeyword" type="text" placeholder="주문번호, 메뉴명, 주소, 요구사항 검색" />
+        <input v-model="searchKeyword" type="text" placeholder="주문번호, 메뉴명, 주소, 요청사항 검색" />
       </div>
 
       <button type="button" class="sub-button filter-button" @click="clearFilters">초기화</button>
@@ -769,7 +1020,8 @@ const saveReason = async () => {
             <h2>당일 주문 목록</h2>
             <p>오늘 기준 주문만 표시합니다.</p>
           </div>
-          <span class="count-text">총 {{ filteredOrders.length }}건</span>
+          <span class="count-text">
+           총 {{ filteredOrders.length }}건 · {{ currentPage }}/{{ totalPages }}페이지 </span>
         </div>
 
         <div class="table-scroll">
@@ -788,7 +1040,7 @@ const saveReason = async () => {
             </thead>
             <tbody>
               <tr 
-                v-for="order in filteredOrders" 
+                v-for="order in pagedOrders" 
                 :key="order.id"
                 :class="{ selected: selectedOrder?.id === order.id }"
                 @click="selectOrder(order)"
@@ -797,7 +1049,7 @@ const saveReason = async () => {
                   <button
                     type="button"
                     class="order-number-button platform-order-number"
-                    @click.stop="selectOrder(order)"
+                    @click.stop="selectOrderAndScroll(order)"
                   >
                     {{ order.platformOrderNo }}
                   </button>
@@ -835,7 +1087,7 @@ const saveReason = async () => {
 
                 <td class="text-cell request-cell">
                   <small class="request-text-preview">
-                    {{ order.requestText || '요구사항 없음' }}
+                    {{ order.requestText || '요청사항 없음' }}
                   </small>
                 </td>
 
@@ -877,10 +1129,47 @@ const saveReason = async () => {
               </tr>
             </tbody>
           </table>
+          <div
+            v-if="filteredOrders.length > pageSize"
+            class="pagination"
+          >
+            <button
+              type="button"
+              class="page-button"
+              :disabled="currentPage === 1"
+              @click="changePage(currentPage - 1)"
+            >
+              이전
+            </button>
+
+            <button
+              v-for="page in pageNumbers"
+              :key="page"
+              type="button"
+              class="page-number"
+              :class="{ active: currentPage === page }"
+              @click="changePage(page)"
+            >
+              {{ page }}
+            </button>
+
+            <button
+              type="button"
+              class="page-button"
+              :disabled="currentPage === totalPages"
+              @click="changePage(currentPage + 1)"
+            >
+              다음
+            </button>
+          </div>
         </div>
       </article>
 
-      <aside v-if="selectedOrder" class="order-detail-panel">
+      <aside
+        v-if="selectedOrder"
+        ref="detailPanelRef"
+        class="order-detail-panel"
+      >
         <div class="detail-head">
           <div>
             <span class="detail-label">주문 상세</span>
@@ -900,12 +1189,12 @@ const saveReason = async () => {
           <div class="detail-row"><span>플랫폼</span><strong>{{ getPlatformName(selectedOrder.platformType) }}</strong></div>
           <div class="detail-row"><span>메뉴</span><strong>{{ selectedOrder.menuSummary }}</strong></div>
           <div class="detail-row"><span>배달주소</span><strong>{{ selectedOrder.deliveryAddress }}</strong></div>
-          <div class="detail-row request-row"><span>요구사항</span><strong>{{ selectedOrder.requestText || '없음' }}</strong></div>
+          <div class="detail-row request-row"><span>요청사항</span><strong>{{ selectedOrder.requestText || '없음' }}</strong></div>
         </div>
 
         <div class="detail-section request-guide" :class="(selectedOrder.riskBadges||[]).length ? 'attention' : 'plain'">
-          <h3>고객 요구사항</h3>
-          <p class="request-text-large">{{ selectedOrder.requestText || '요구사항이 없습니다.' }}</p>
+          <h3>고객 요청사항</h3>
+          <p class="request-text-large">{{ selectedOrder.requestText || '요청사항이 없습니다.' }}</p>
           
           <div v-if="(selectedOrder.riskBadges||[]).length" class="request-risk-summary">
             <strong>{{ (selectedOrder.riskBadges||[]).join(' · ') }}</strong>
@@ -954,7 +1243,10 @@ const saveReason = async () => {
             <strong>+{{ formatMoney(selectedOrder.platformSupportAmount) }}</strong>
           </div>
 
-          <div class="cost-row total">
+          <div
+            class="cost-row total"
+            :class="{ negative: Number(selectedOrder.netProfit || 0) < 0 }"
+          >
             <span>예상 순수익</span>
             <strong>{{ formatMoney(selectedOrder.netProfit) }}</strong>
           </div>
@@ -978,7 +1270,7 @@ const saveReason = async () => {
             :disabled="orderStore.changingOrderId === selectedOrder.id"
             @click="openReasonModal('CANCEL', selectedOrder)"
           >
-            취소 처리
+            주문 취소
           </button>
 
           <button
@@ -1012,13 +1304,13 @@ const saveReason = async () => {
           <button
             v-if="getNextStatus(selectedOrder.orderStatus)"
             type="button"
-            class="primary-button"
+            class="primary-button state-action-button"
             :disabled="orderStore.changingOrderId === selectedOrder.id"
             @click="changeOrderStatus(selectedOrder)"
           >
-            {{ orderStore.changingOrderId === selectedOrder.id ? '변경 중...' : '상태 변경' }}
+            {{ orderStore.changingOrderId === selectedOrder.id ? '변경 중...' : getNextActionName(selectedOrder.orderStatus) }}
           </button>
-          <button v-else type="button" class="sub-button" disabled>상태 변경 불가</button>
+          <button v-else type="button" class="sub-button state-action-button" disabled>상태 변경 불가</button>
         </div>
       </aside>
     </section>
@@ -1081,7 +1373,7 @@ const saveReason = async () => {
               <small>{{ reasonModalText.helpText }}</small>
             </div>
             
-            <div class="modal-order-actions" style="margin-top: 18px;">
+            <div class="modal-order-actions">
               <button class="sub-button" @click="closeReasonModal">닫기</button>
               <button
                 class="primary-button"
@@ -1239,7 +1531,7 @@ const saveReason = async () => {
 /* ============================================================
    메인 테이블 & 상세 패널 (가독성 향상)
    ============================================================ */
-.orders-content { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 16px; align-items: start; }
+.orders-content { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; align-items: start; }
 .order-list-panel, .order-detail-panel { border: 1px solid #e5e7eb; border-radius: 18px; background-color: #ffffff; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06); }
 .order-list-panel { min-width: 0; padding: 22px; }
 .panel-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
@@ -1409,6 +1701,82 @@ const saveReason = async () => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+/* 신규 주문 패널 */
+.new-order-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr) auto;
+  align-items: stretch;
+}
+
+.new-order-request-box {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  min-height: 86px;
+  padding: 16px;
+  border: 1px solid #dbe3ee;
+  border-radius: 14px;
+  background-color: #f8fafc;
+}
+
+.new-order-request-box.attention {
+  border-color: #fed7aa;
+  background-color: #fff7ed;
+}
+
+.new-order-request-box span {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.new-order-request-box strong {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.new-order-request-box small {
+  color: #c2410c;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.page-button,
+.page-number {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  color: #475569;
+  background-color: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.page-number.active {
+  color: #ffffff;
+  border-color: #2784b8;
+  background-color: #2784b8;
+}
+
+.page-button:disabled,
+.page-number:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 /* 뱃지 통일 (플랫폼 중립화 포함) */
 .platform-badge, .status-badge, .delay-badge, .risk-badge { 
@@ -1489,8 +1857,9 @@ const saveReason = async () => {
 }
 .cost-row.total { margin-top: 6px; padding-top: 16px; border-bottom: 0; border-top: 1px solid #dbe3ee; font-weight: 900; }
 .cost-row.total strong { color: #15803d; font-size: 19px; }
+.cost-row.total.negative strong { color: #dc2626; }
 
-/* 요구사항 / 취소 가이드 영역 */
+/* 요청사항 / 취소 가이드 영역 */
 .request-guide, .cancel-history, .refund-history { padding: 16px; margin-top: 18px; border-radius: 14px; background: #f8fafc; }
 .request-guide.plain { border: 1px solid #e5e7eb; background: #ffffff; }
 .request-guide.attention { border: 1px solid #e5e7eb; border-left: 5px solid #f59e0b; background: #ffffff; }
@@ -1554,4 +1923,373 @@ const saveReason = async () => {
   .cancel-preset-grid { grid-template-columns: repeat(2, 1fr); }
   .detail-actions { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   2026-06-27 화면 보정
+   - 다음 접수 주문 카드 중앙 정렬
+   - 주문 목록 테이블 가로 스크롤 최소화
+   - 플랫폼 주문번호/액션 칼럼 한 화면 표시
+   ============================================================ */
+.new-order-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px;
+}
+
+.new-order-split {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 0.95fr) auto;
+  align-items: stretch;
+}
+
+.new-order-main {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 86px;
+  text-align: center;
+}
+
+.new-order-main h2 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.new-order-main p {
+  margin: 0;
+  color: #64748b;
+  font-size: 19px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.new-order-actions {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.new-order-actions .primary-button,
+.new-order-actions .sub-button {
+  min-height: 86px;
+  min-width: 108px;
+  padding: 0 20px;
+  font-size: 19px;
+}
+
+.table-scroll {
+  overflow-x: visible;
+}
+
+.order-table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.order-table th,
+.order-table td {
+  padding: 12px 7px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.order-table td {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.order-table th:nth-child(1),
+.order-table td:nth-child(1) {
+  width: 132px;
+}
+
+.order-table th:nth-child(2),
+.order-table td:nth-child(2) {
+  width: 82px;
+}
+
+.order-table th:nth-child(3),
+.order-table td:nth-child(3) {
+  width: 82px;
+}
+
+.order-table th:nth-child(4),
+.order-table td:nth-child(4) {
+  width: 145px;
+}
+
+.order-table th:nth-child(5),
+.order-table td:nth-child(5) {
+  width: 135px;
+}
+
+.order-table th:nth-child(6),
+.order-table td:nth-child(6) {
+  width: 120px;
+}
+
+.order-table th:nth-child(7),
+.order-table td:nth-child(7) {
+  width: 82px;
+}
+
+.order-table th:nth-child(8),
+.order-table td:nth-child(8) {
+  width: 88px;
+}
+
+.order-number-button {
+  display: inline-block;
+  max-width: 118px;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  color: #2784b8;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-decoration: none;
+  word-break: break-all;
+  cursor: pointer;
+}
+
+.order-no-cell small {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px !important;
+  line-height: 1.25;
+}
+
+.menu-cell strong {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.3;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-cell small {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.request-text-preview {
+  display: -webkit-box !important;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.table-button {
+  min-height: 34px;
+  padding: 0 8px;
+  border: 0;
+  background-color: #eaf8fd;
+  color: #1f1f20;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+@media (max-width: 1280px) {
+  .new-order-split {
+    grid-template-columns: 1fr;
+  }
+
+  .new-order-actions {
+    justify-content: stretch;
+  }
+
+  .new-order-actions .primary-button,
+  .new-order-actions .sub-button {
+    flex: 1;
+  }
+}
+
+
+/* ============================================================
+   2026-06-27 주문 상세 액션 위치 보정
+   - 배달중 상태의 완료 처리 버튼이 왼쪽으로 밀리지 않게 오른쪽 칸 고정
+   ============================================================ */
+.detail-actions {
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr);
+  align-items: stretch;
+}
+
+.detail-actions .state-action-button {
+  grid-column: 2;
+}
+
+.detail-actions .primary-button.state-action-button,
+.detail-actions .sub-button.state-action-button {
+  width: 100%;
+}
+
+
+
+/* ============================================================
+   2026-06-27 주문 화면 버튼/모달/글자 굵기 보정
+   ============================================================ */
+.orders-view {
+  font-weight: 500;
+}
+
+.page-header h1,
+.panel-title-row h2,
+.detail-section h3,
+.detail-head h2,
+.new-order-main h2 {
+  font-weight: 700;
+}
+
+.category-text,
+.count-text,
+.filter-group label,
+.summary-card-head span,
+.detail-label,
+.card-label {
+  font-weight: 600;
+}
+
+.new-order-main h2 {
+  font-size: 26px;
+}
+
+.new-order-main p {
+  font-size: 17px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.new-order-request-box strong,
+.request-text-large {
+  font-weight: 600;
+}
+
+.new-order-actions .primary-button,
+.new-order-actions .sub-button {
+  min-width: 102px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.order-table th {
+  font-weight: 700;
+}
+
+.order-number-button,
+.menu-cell strong,
+.table-button,
+.status-badge,
+.platform-badge,
+.risk-badge,
+.delay-badge {
+  font-weight: 700;
+}
+
+.menu-cell small,
+.request-text-preview,
+.text-cell strong,
+.order-no-cell small {
+  font-weight: 500;
+}
+
+.detail-actions {
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr);
+}
+
+.detail-actions .state-action-button {
+  grid-column: 2;
+}
+
+.modal-order-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.modal-order-actions .sub-button,
+.modal-order-actions .primary-button {
+  min-width: 132px;
+  font-weight: 700;
+}
+
+.status-modal-header h2,
+.modal-order-main strong,
+.cancel-reason-area label,
+.cancel-preset-grid button {
+  font-weight: 700;
+}
+
+.cancel-reason-area select,
+.cancel-reason-area textarea {
+  font-weight: 500;
+}
+
+
+/* ============================================================
+   2026-06-27 01:39 취소/환불 사유 모달 입력창 넘침 보정
+   ============================================================ */
+.cancel-modal,
+.status-modal-body,
+.modal-order-card,
+.cancel-reason-area,
+.cancel-reason-area select,
+.cancel-reason-area textarea {
+  box-sizing: border-box;
+}
+
+.cancel-modal {
+  max-width: calc(100vw - 56px);
+  overflow: hidden;
+}
+
+.status-modal-body {
+  overflow-x: hidden;
+}
+
+.modal-order-card,
+.cancel-reason-area {
+  min-width: 0;
+  width: 100%;
+}
+
+.cancel-reason-area select,
+.cancel-reason-area textarea {
+  width: 100%;
+  max-width: 100%;
+}
+
+.modal-order-actions {
+  width: 100%;
+}
+
 </style>

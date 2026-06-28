@@ -4,15 +4,23 @@ import { jwtDecode } from "jwt-decode";
 import dayjs from "dayjs";
 
 const myAxios = axios.create({
-  baseURL: 
-  
-  import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
   withCredentials: true,
 
   headers: {
-    'Content-Type': 'application/json', 
+    'Content-Type': 'application/json',
   },
 });
+
+const moveToServerErrorPage = () => {
+  const currentPath = window.location.pathname;
+
+  if (currentPath === '/error') {
+    return;
+  }
+
+  window.location.assign('/error');
+};
 
 myAxios.interceptors.request.use(async (config) => {
   const authStore = useAuthStore();
@@ -59,5 +67,22 @@ myAxios.interceptors.request.use(async (config) => {
   
   return config;
 });
+
+
+myAxios.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    const status = error.response?.status;
+    const shouldMoveToErrorPage = !error.response || status >= 500;
+
+    if (shouldMoveToErrorPage) {
+      moveToServerErrorPage();
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default myAxios;

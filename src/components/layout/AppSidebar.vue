@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useDashboardStore } from '../../stores/dashboard/useDashboardStore.js'
 
 defineProps({
   isOpen: {
@@ -11,6 +12,7 @@ defineProps({
 
 const emit = defineEmits(['toggle'])
 const router = useRouter()
+const dashboardStore = useDashboardStore()
 
 // 1. HTML 시안 및 캡처 이미지 기준 메뉴 리스트
 const navItems = ref([
@@ -22,22 +24,128 @@ const navItems = ref([
   { name: 'Mock 데이터', path: '/mockdata' }
 ])
 
-// 2. 실시간 대시보드 연동용 가상 데이터 (HTML 시안과 동일 구조)
-const operationSummary = ref({
-  level: '정상',      // 정상, 주의, 위험 단계
-  loadRate: 45,       // 부하율 (%)
-  delayRisk: 0,       // 지연 위험 주문 수
-  requestRisk: 2,     // 요구사항 확인 주문 수
-  lossRisk: 1,        // 손실 위험 주문 수
-  sales: 245000,      // 오늘 누적 매출
-  profit: 91600,      // 예상 순수익
-  completedCount: 12, // 완료 건수
-  cancelCount: 0,     // 취소 건수
-  cancelRate: 0.0     // 취소율 (%)
+const REQUEST_ATTENTION_TYPES = [
+  'ALLERGY',
+  'DISPUTE',
+  'EXCESSIVE',
+  'GROUP',
+  'REQUEST',
+  'REQUEST_RISK',
+]
+
+const REQUEST_ATTENTION_LEVELS = ['WARNING', 'DANGER']
+
+const normalizeRiskValue = (value) => {
+  return String(value || '').trim().toUpperCase()
+}
+
+const isRequestRiskOrder = (order = {}) => {
+  if (order.orderStatus !== 'WAITING') {
+    return false
+  }
+
+  const riskType = normalizeRiskValue(order.requestRiskType)
+  const riskLevel = normalizeRiskValue(order.requestRiskLevel)
+
+  return (
+    REQUEST_ATTENTION_TYPES.includes(riskType) ||
+    REQUEST_ATTENTION_LEVELS.includes(riskLevel)
+  )
+}
+
+const getOperationLevel = (summary) => {
+  const loadRate = Number(summary.loadRate || 0)
+  const delayRisk = Number(summary.delayRisk || 0)
+  const requestRisk = Number(summary.requestRisk || 0)
+  const lossRisk = Number(summary.lossRisk || 0)
+  const kitchenLoadLevel = summary.kitchenLoadLevel || ''
+
+  if (kitchenLoadLevel === 'OVERLOAD' || loadRate >= 100 || delayRisk >= 3) {
+    return '위험'
+  }
+
+  if (
+    kitchenLoadLevel === 'HIGH' ||
+    loadRate >= 70 ||
+    delayRisk >= 1 ||
+    requestRisk >= 2 ||
+    lossRisk >= 1
+  ) {
+    return '주의'
+  }
+
+  return '정상'
+}
+
+const operationSummary = computed(() => {
+  const data = dashboardStore.operationSummary
+
+  if (!data) {
+    return {
+      level: '정상',
+      loadRate: 0,
+      delayRisk: 0,
+      requestRisk: 0,
+      lossRisk: 0,
+      orderCount: 0,
+      sales: 0,
+      profit: 0,
+      completedCount: 0,
+      cancelCount: 0,
+      cancelRate: 0,
+      kitchenLoadLevel: ''
+    }
+  }
+
+  const requestRisk =
+    dashboardStore.todayOrders.filter(isRequestRiskOrder).length
+
+  const summary = {
+    loadRate: data.loadRate || 0,
+    orderCount: data.todayOrderCount || 0,
+    delayRisk: data.delayRiskCount || 0,
+    requestRisk,
+    lossRisk: data.lossRiskCount || 0,
+    sales: data.todaySales || 0,
+    profit: data.todayNetProfit || 0,
+    completedCount: data.completedCount || 0,
+    cancelCount: data.canceledCount || data.cancelCount || 0,
+    cancelRate: data.cancelRate || 0,
+    kitchenLoadLevel: data.kitchenLoadLevel || ''
+  }
+
+  return {
+    ...summary,
+    level: getOperationLevel(summary)
+  }
+})
+
+const updatedAtText = computed(() => {
+  if (!dashboardStore.lastUpdatedAt) {
+    return '동기화 전'
+  }
+
+  return `${dashboardStore.lastUpdatedAt.toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })} 기준`
 })
 
 // 돈 단위 포맷 함수
 const formatMoney = (val) => `${Number(val || 0).toLocaleString('ko-KR')}원`
+
+onMounted(async () => {
+  if (dashboardStore.operationSummary) {
+    return
+  }
+
+  try {
+    await dashboardStore.loadDashboard({ showAlert: false })
+  } catch (error) {
+    console.error('사이드바 운영 요약 조회 실패:', error)
+  }
+})
 </script>
 
 <template>
@@ -54,14 +162,18 @@ const formatMoney = (val) => `${Number(val || 0).toLocaleString('ko-KR')}원`
 
       <section class="side-operation-card" :class="`level-${operationSummary.level}`">
         <span class="side-card-label">
-          현재 운영 <em>12:43 기준</em>
+          현재 운영 <em>{{ updatedAtText }}</em>
         </span>
         <strong>{{ operationSummary.level }}</strong>
-        <p>부하율 {{ operationSummary.loadRate }}% · 지연 {{ operationSummary.delayRisk }} · 요구 {{ operationSummary.requestRisk }}</p>
+        <p class="side-load-text">부하율 {{ operationSummary.loadRate }}%</p>
+        <div class="side-risk-lines">
+          <span>주문 {{ operationSummary.orderCount }}</span>
+          <span>지연 {{ operationSummary.delayRisk }}</span>
+          <span>요청 {{ operationSummary.requestRisk }}</span>
+        </div>
         <div class="side-load">
           <span :style="{ width: `${Math.min(operationSummary.loadRate, 100)}%` }"></span>
         </div>
-        <small class="side-card-help">피크타임에는 여기 숫자만 먼저 확인</small>
       </section>
 
       <section class="side-metric-card side-performance-card">
@@ -89,13 +201,13 @@ const formatMoney = (val) => `${Number(val || 0).toLocaleString('ko-KR')}원`
 
       <section class="side-action-card">
         <span>확인 필요</span>
-        <button type="button" @click="router.push({ path: '/orders', query: { filter: 'REQUEST' } })">
-          요구사항 <strong>{{ operationSummary.requestRisk }}건</strong>
+        <button type="button" @click="router.push({ path: '/orders', query: { attention: 'REQUEST' } })">
+          요청사항 <strong>{{ operationSummary.requestRisk }}건</strong>
         </button>
-        <button type="button" @click="router.push({ path: '/orders', query: { filter: 'DELAY' } })">
+        <button type="button" @click="router.push({ path: '/orders', query: { attention: 'DELAY' } })">
           지연위험 <strong>{{ operationSummary.delayRisk }}건</strong>
         </button>
-        <button type="button" @click="router.push({ path: '/orders', query: { filter: 'LOSS' } })">
+        <button type="button" @click="router.push({ path: '/orders', query: { attention: 'LOSS' } })">
           손실위험 <strong>{{ operationSummary.lossRisk }}건</strong>
         </button>
         <button type="button" @click="router.push({ path: '/reports', query: { tab: 'cancel' } })">
@@ -217,13 +329,36 @@ const formatMoney = (val) => `${Number(val || 0).toLocaleString('ko-KR')}원`
 .side-metric-card p,
 .side-metric-card small { margin-top: 8px; color: #475569; font-size: 15px; font-weight: 800; line-height: 1.45; }
 
-/* 배경색 분기 */
-.side-operation-card { background: #EAF8FD; border-color: #87CEEB; }
-.side-operation-card.level-주의 { background: #FFFBEB; border-color: #fde68a; }
-.side-operation-card.level-위험 { background: #FEF2F2; border-color: #fecaca; }
+.side-operation-card .side-load-text { margin-top: 8px; }
+.side-risk-lines {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+  color: #164e68;
+}
+.side-risk-lines span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.62);
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+/* 배경색 분기: 실시간 운영 대시보드의 운영 브리핑 색상과 동일하게 사용 */
+.side-operation-card { background: #f0fdf4; border-color: #bbf7d0; }
+.side-operation-card.level-정상 { background: #f0fdf4; border-color: #bbf7d0; }
+.side-operation-card.level-주의 { background: #fff7ed; border-color: #fed7aa; }
+.side-operation-card.level-위험 { background: #fff5f5; border-color: #fecaca; }
 
 .side-load { height: 8px; margin-top: 12px; overflow: hidden; border-radius: 999px; background: #e5e7eb; }
-.side-load span { display: block; height: 100%; border-radius: inherit; background: #2784B8; }
+.side-load span { display: block; height: 100%; border-radius: inherit; background: #16a34a; }
+.side-operation-card.level-주의 .side-load span { background: #d97706; }
+.side-operation-card.level-위험 .side-load span { background: #dc2626; }
 .side-card-help { display: block; margin-top: 8px; color: #64748b; font-size: 15px; font-weight: 700; }
 
 /* ============================================================
