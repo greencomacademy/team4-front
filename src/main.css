@@ -12,6 +12,14 @@
   --di-font-heavy: 800;
   --di-placeholder: #aebccd;
 }
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
 
 * ,
 *::before,
