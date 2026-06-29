@@ -454,4 +454,39 @@ Table Style
 .margin-bar-fill { height: 100%; background: var(--primary); border-radius: 4px; }
 
 .summary-text { font-size: 13px; color: var(--text-sub); max-width: 250px; line-height: 1.4; }
+
+/* ============================================================
+   플랫폼 수수료 설정 표 중앙정렬
+   - 설정값을 비교·수정하는 표라 플랫폼명, 입력칸, 버튼을 모두 칼럼 중앙에 맞춘다.
+   - 아래 요약 테이블의 긴 설명 문장은 기존 가독성을 위해 왼쪽 정렬을 유지한다.
+   ============================================================ */
+.form-table th,
+.form-table td {
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.form-table .platform-info {
+  justify-content: center;
+}
+
+.form-table .platform-name {
+  align-items: center;
+  text-align: center;
+}
+
+.form-table .input-wrapper {
+  margin: 0 auto;
+}
+
+.form-table .btn,
+.form-table .btn-sm-primary,
+.form-table button {
+  margin: 0 auto;
+}
+
+.form-table .input-field {
+  text-align: center;
+}
+
 </style>
