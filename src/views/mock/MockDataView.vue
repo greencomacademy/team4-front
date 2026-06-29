@@ -255,7 +255,7 @@ const deleteMockOrders = async () => {
       <section class="mock-card">
         <div class="card-header">
           <h2>손실 위험 주문</h2>
-          <p>예상 순수익 0원 이하 주문입니다.</p>
+          <p>쿠폰을 적용해 예상 순수익이 낮은 주문입니다.</p>
         </div>
         <div class="card-body empty-body"></div>
         <div class="card-footer">
