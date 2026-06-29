@@ -209,11 +209,43 @@ const setInvalidMessage = (event, message) => {
 const clearInvalidMessage = (event) => {
   event.target.setCustomValidity('');
 };
+const handlePhoneInvalid = (event) => {
+  const input = event.target;
+  const value = String(input.value ?? '').trim();
+
+   // 숫자 아닌 문자는 입력되자마자 제거
+  input.value = input.value.replace(/\D/g, '').slice(0, 11);
+
+  formData.phone = input.value;
+
+  if (!value) {
+    input.setCustomValidity('대표 전화번호를 입력해주세요. 예: 0212345678');
+    return;
+  }
+
+  if (!/^\d+$/.test(value)) {
+    input.setCustomValidity('대표 전화번호는 숫자만 입력해주세요.');
+    return;
+  }
+
+  if (value.length < 8) {
+    input.setCustomValidity('대표 전화번호가 너무 짧습니다. 8~11자리 숫자로 입력해주세요.');
+    return;
+  }
+
+  if (value.length > 11) {
+    input.setCustomValidity('대표 전화번호가 너무 깁니다. 8~11자리 숫자로 입력해주세요.');
+    return;
+  }
+
+  input.setCustomValidity('');
+};
 
 // 유효성 검사
 
 const validateStoreForm = () => {
   const currentBizNum = getBusinessNumber();
+  const phoneValue = String(formData.phone ?? '').trim();
 
   if (!formData.storeName.trim()) {
     alert('매장명을 입력해주세요.');
@@ -221,11 +253,29 @@ const validateStoreForm = () => {
     return false;
   }
 
-  if (!formData.phone.trim()) {
-    alert('대표 전화번호를 입력해주세요.');
-    activeTab.value = 'basic';
-    return false;
-  }
+  if (!phoneValue) {
+  alert('대표 전화번호를 입력해주세요.');
+  activeTab.value = 'basic';
+  return false;
+}
+
+if (!/^\d+$/.test(phoneValue)) {
+  alert('대표 전화번호는 숫자만 입력해주세요. 예: 0212345678');
+  activeTab.value = 'basic';
+  return false;
+}
+
+if (phoneValue.length < 8) {
+  alert('대표 전화번호가 너무 짧습니다. 8~11자리 숫자로 입력해주세요.');
+  activeTab.value = 'basic';
+  return false;
+}
+
+if (phoneValue.length > 11) {
+  alert('대표 전화번호가 너무 깁니다. 8~11자리 숫자로 입력해주세요.');
+  activeTab.value = 'basic';
+  return false;
+}
 
   if (!formData.address.trim()) {
     alert('주소를 입력해주세요.');
@@ -509,18 +559,22 @@ const handleOperationSubmit = async () => {
             @input="clearInvalidMessage($event)"
           />
         </div>
-        <div class="input-group">
+        <div class="input-group" novalidate >
           <label title="주문 처리나 매장 연락처로 사용할 대표 전화번호입니다. 숫자만 입력해주세요.">
           대표 전화번호 <span>*</span>
           </label>
           <input
+          type="tel"
             v-model="formData.phone"
             required
             inputmode="numeric"
+            pattern="\d{8,11}"
             placeholder="예: 0212345678"
             title="숫자만 입력하는 것을 권장합니다. 예: 0212345678"
-            @invalid="setInvalidMessage($event, '대표 전화번호를 입력해주세요. 예: 0212345678')"
+            @invalid="handlePhoneInvalid($event)"
             @input="clearInvalidMessage($event)"
+            maxlength="11"
+            minlength="8"
           />
         </div>
         

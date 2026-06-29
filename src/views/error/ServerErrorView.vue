@@ -61,7 +61,7 @@ const goDashboard = () => {
 
 .error-code {
   margin: 0 0 12px;
-  color: #f97316;
+  color: #87CEEB;
   font-size: 48px;
   font-weight: 800;
   letter-spacing: -1px;
@@ -117,7 +117,7 @@ const goDashboard = () => {
 }
 
 .primary-button {
-  background: #f97316;
+  background: #87CEEB;
   color: #ffffff;
 }
 
