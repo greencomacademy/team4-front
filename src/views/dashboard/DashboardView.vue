@@ -239,57 +239,121 @@ const toLossPriorityOrder = (order) => {
     platformNo: order.platformOrderNumber,
     platform: getPlatformName(order.platformType),
     menuSummary: order.menuSummary || '-',
+    orderedAt: order.orderedAt,
     issueLevel: 'warning',
     issueLabel: '손실 위험',
     issueReason: `예상 순수익 ${formatMoney(order.netProfit)}`,
+    hasIssue: true,
   };
+};
+
+const toNormalPriorityOrder = (order) => {
+  return {
+    id: order.id,
+    orderNo: order.orderNo,
+    platformNo: order.platformOrderNumber,
+    platform: getPlatformName(order.platformType),
+    menuSummary: order.menuSummary || '-',
+    orderedAt: order.orderedAt,
+    issueLevel: 'normal',
+    issueLabel: '일반 주문',
+    issueReason: '접수순 확인',
+    hasIssue: false,
+  };
+};
+
+const getOrderTimeValue = (order) => {
+  const orderedAt = order?.orderedAt;
+
+  if (orderedAt) {
+    const timestamp = new Date(orderedAt).getTime();
+
+    if (!Number.isNaN(timestamp)) {
+      return timestamp;
+    }
+  }
+
+  return Number(order?.id || 0);
+};
+
+const isActiveOrder = (order) => {
+  return ['WAITING', 'COOKING', 'DELIVERING'].includes(order.orderStatus);
 };
 
 /*
  * 우선 확인 주문
  *
- * 1순위: 조리 지연 위험 주문
- * 2순위: 요청사항 위험 주문
- * 3순위: 손실 위험 주문
+ * - 진행 중인 주문은 일반 주문이라도 모두 보여준다.
+ * - 요청사항/지연/손실처럼 주의가 필요한 주문을 먼저 보여준다.
+ * - 같은 그룹 안에서는 먼저 들어온 주문이 앞에 오도록 FIFO로 정렬한다.
  */
 const priorityOrders = computed(() => {
-  const result = [];
-
-  const pushIfNotExists = (order) => {
-    const exists =
-      result.some((item) => item.id === order.id);
-
-    if (!exists) {
-      result.push(order);
-    }
-  };
+  const delayRiskMap = new Map();
 
   dashboardStore.delayRiskOrders
     .filter((order) => {
       return order.delayRiskLevel !== 'SAFE';
     })
-    .map(toDelayPriorityOrder)
-    .forEach(pushIfNotExists);
+    .forEach((order) => {
+      delayRiskMap.set(order.id, order);
+    });
 
-  dashboardStore.todayOrders
-    .filter((order) => {
-      return ['WAITING', 'COOKING'].includes(order.orderStatus);
-    })
-    .filter(isRequestRiskOrder)
-    .map(toRequestPriorityOrder)
-    .forEach(pushIfNotExists);
+  const activeOrders =
+    dashboardStore.todayOrders
+      .filter(isActiveOrder)
+      .map((order) => {
+        const delayOrder = delayRiskMap.get(order.id);
 
-  dashboardStore.todayOrders
-    .filter((order) => {
-      return ['WAITING', 'COOKING', 'DELIVERING'].includes(order.orderStatus);
-    })
-    .filter((order) => {
-      return Number(order.netProfit || 0) <= 0;
-    })
-    .map(toLossPriorityOrder)
-    .forEach(pushIfNotExists);
+        if (delayOrder) {
+          return {
+            ...toDelayPriorityOrder(delayOrder),
+            orderedAt: order.orderedAt,
+            hasIssue: true,
+          };
+        }
 
-  return result;
+        if (isRequestRiskOrder(order)) {
+          return {
+            ...toRequestPriorityOrder(order),
+            orderedAt: order.orderedAt,
+            hasIssue: true,
+          };
+        }
+
+        if (Number(order.netProfit || 0) <= 0) {
+          return toLossPriorityOrder(order);
+        }
+
+        return toNormalPriorityOrder(order);
+      });
+
+  const knownOrderIds =
+    new Set(activeOrders.map((order) => order.id));
+
+  const delayFallbackOrders =
+    dashboardStore.delayRiskOrders
+      .filter((order) => {
+        return order.delayRiskLevel !== 'SAFE';
+      })
+      .filter((order) => {
+        return !knownOrderIds.has(order.id);
+      })
+      .map((order) => {
+        return {
+          ...toDelayPriorityOrder(order),
+          orderedAt: order.cookingStartedAt,
+          hasIssue: true,
+        };
+      });
+
+  return [...activeOrders, ...delayFallbackOrders]
+    .sort((a, b) => {
+      if (a.hasIssue !== b.hasIssue) {
+        return a.hasIssue ? -1 : 1;
+      }
+
+      return getOrderTimeValue(a) - getOrderTimeValue(b);
+    });
 });
 
 const priorityTotalPages = computed(() => {
@@ -524,7 +588,7 @@ onMounted(async () => {
             </span>
           </button>
           <div v-if="!priorityOrders.length" class="brief-empty">
-            지금 바로 처리할 위험 주문은 없습니다.
+            현재 진행 중인 주문이 없습니다.
           </div>
         </div>
       </section>
@@ -568,7 +632,7 @@ onMounted(async () => {
       <div class="detail-card col-6">
         <div class="detail-header">
           <h3>우선 확인 주문</h3>
-          <span class="text-muted">긴급도 순 {{ priorityOrders.length }}건</span>
+          <span class="text-muted">주의 우선 · 접수순 {{ priorityOrders.length }}건</span>
         </div>
         <div class="order-list priority-list">
           <button 
