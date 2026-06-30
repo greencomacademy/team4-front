@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch, onBeforeUnmount } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useOrderStore } from '../../stores/order/useOrderStore';
 
@@ -8,6 +8,11 @@ const selectedPlatform = ref('');
 const selectedStatus = ref('');
 const selectedAttention = ref(''); // 확인 필요(위험) 필터 추가
 const searchKeyword = ref('');
+const detailBottomRef = ref(null);
+const ordersContentRef = ref(null);
+const showDetailTopButton = ref(false);
+
+let detailScrollContainer = null;
 
 const route = useRoute();
 const router = useRouter();
@@ -528,8 +533,17 @@ const loadTodayOrders = async () => {
 onMounted(async () => {
   applyRouteQueryFilters();
   await loadTodayOrders();
+  await bindDetailScrollContainer();
 });
+onBeforeUnmount(() => {
+  const pageArea = getPageScrollContainer();
 
+  if (pageArea) {
+    pageArea.removeEventListener('scroll', updateDetailTopButtonVisible);
+  }
+
+  window.removeEventListener('scroll', updateDetailTopButtonVisible);
+});
 /*
  * 같은 OrdersView 안에서 query만 바뀌는 이동을 처리한다.
  * 예: /orders?active=true → /orders
@@ -585,19 +599,22 @@ const selectOrder = async (order) => {
 const scrollToDetailPanel = async () => {
   await nextTick();
 
-  if (!detailPanelRef.value) {
+  const scrollTarget = detailBottomRef.value || detailPanelRef.value;
+
+  if (!scrollTarget) {
     return;
   }
 
-  detailPanelRef.value.scrollIntoView({
+  scrollTarget.scrollIntoView({
     behavior: 'smooth',
-    block: 'start',
+    block: 'end',
   });
 };
 
 const selectOrderAndScroll = async (order) => {
   await selectOrder(order);
   await scrollToDetailPanel();
+  await bindDetailScrollContainer();
 };
 
 const setOrderFilter = (type, value) => {
@@ -612,6 +629,73 @@ const setOrderFilter = (type, value) => {
   }
   currentPage.value = 1;
   closeStatusModal();
+};
+
+const getPageScrollContainer = () => {
+  return document.querySelector('.page-area');
+};
+
+const getCurrentPageScrollTop = () => {
+  const pageArea = getPageScrollContainer();
+
+  if (pageArea) {
+    return pageArea.scrollTop;
+  }
+
+  return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+};
+
+const updateDetailTopButtonVisible = () => {
+  showDetailTopButton.value = selectedOrder.value && getCurrentPageScrollTop() > 260;
+};
+
+const scrollToPageTop = () => {
+  const pageArea = getPageScrollContainer();
+
+  if (pageArea) {
+    pageArea.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+
+  document.documentElement.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+
+  document.body.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+
+  window.setTimeout(() => {
+    updateDetailTopButtonVisible();
+  }, 350);
+};
+const bindDetailScrollContainer = async () => {
+  await nextTick();
+
+  const pageArea = getPageScrollContainer();
+
+  if (pageArea) {
+    pageArea.removeEventListener('scroll', updateDetailTopButtonVisible);
+    pageArea.addEventListener('scroll', updateDetailTopButtonVisible, {
+      passive: true,
+    });
+  }
+
+  window.removeEventListener('scroll', updateDetailTopButtonVisible);
+  window.addEventListener('scroll', updateDetailTopButtonVisible, {
+    passive: true,
+  });
+
+  updateDetailTopButtonVisible();
 };
 
 const openStatusModal = (summaryType) => {
@@ -946,7 +1030,6 @@ const saveReason = async () => {
       <article class="summary-card waiting clickable" @click="setOrderFilter('status', 'WAITING')">
         <div class="summary-card-head">
           <span>접수대기</span>
-          <small>WAITING</small>
         </div>
         <strong>{{ operationSummary.waitingCount }}건</strong>
         <p>클릭하면 접수대기 주문만 확인</p>
@@ -955,7 +1038,6 @@ const saveReason = async () => {
       <article class="summary-card cooking clickable" @click="setOrderFilter('status', 'COOKING')">
         <div class="summary-card-head">
           <span>조리중</span>
-          <small>COOKING</small>
         </div>
         <strong>{{ operationSummary.cookingCount }}건</strong>
         <p>조리 진행 중인 주문</p>
@@ -964,7 +1046,6 @@ const saveReason = async () => {
       <article class="summary-card delivering clickable" @click="setOrderFilter('status', 'DELIVERING')">
         <div class="summary-card-head">
           <span>배달중</span>
-          <small>DELIVERING</small>
         </div>
         <strong>{{ operationSummary.deliveringCount }}건</strong>
         <p>배달 완료 대기 주문</p>
@@ -973,7 +1054,6 @@ const saveReason = async () => {
       <article class="summary-card risk clickable" @click="setOrderFilter('attention', 'REQUEST')">
         <div class="summary-card-head">
           <span>요청사항 확인</span>
-          <small>ATTENTION</small>
         </div>
         <strong>{{ operationSummary.requestRiskCount }}건</strong>
         <p>확인이 필요한 요청사항</p>
@@ -1025,7 +1105,7 @@ const saveReason = async () => {
       <button type="button" class="sub-button filter-button" @click="clearFilters">초기화</button>
     </section>
 
-    <section class="orders-content">
+    <section class="orders-content" ref="ordersContentRef">
       
       <article class="order-list-panel">
         <div class="panel-title-row">
@@ -1056,7 +1136,7 @@ const saveReason = async () => {
                 v-for="order in pagedOrders" 
                 :key="order.id"
                 :class="{ selected: selectedOrder?.id === order.id }"
-                @click="selectOrder(order)"
+                @click="selectOrderAndScroll(order)"
               >
                 <td class="order-no-cell">
                   <button
@@ -1355,8 +1435,20 @@ const saveReason = async () => {
           </button>
           <button v-else type="button" class="sub-button state-action-button" disabled>상태 변경 불가</button>
         </div>
+        <div ref="detailBottomRef" class="detail-bottom-anchor"></div>
       </aside>
     </section>
+         <button
+      v-if="showDetailTopButton"
+      type="button"
+      class="detail-floating-top-button"
+      title="주문 상세 상단으로"
+      aria-label="주문 상세 상단으로 이동"
+      @click="scrollToPageTop"
+        >
+          ↑
+       </button>
+
 
     <div v-if="isReasonModalOpen && reasonTargetOrder" class="modal-backdrop" @click.self="closeReasonModal">
       <div class="status-modal cancel-modal">
@@ -1502,10 +1594,12 @@ const saveReason = async () => {
   min-height: 44px;
   padding: 0 18px;
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 400;
   transition: all 0.2s;
 }
-
+.detail-bottom-anchor {
+  height: 1px;
+}
 .primary-button { border: 0; color: #ffffff; background-color: #2784b8; }
 .primary-button:hover { background-color: #1f6f99; }
 .sub-button { border: 1px solid #dbe3ee; color: #334155; background-color: #ffffff; }
@@ -1517,13 +1611,22 @@ const saveReason = async () => {
 /* ============================================================
    신규 주문 및 요약 카드
    ============================================================ */
-.new-order-section {
+/* .new-order-section {
   overflow: hidden;
   margin-bottom: 16px;
   border: 2px solid #2784b8;
   border-radius: 16px;
   background-color: #ffffff;
   box-shadow: 0 18px 44px rgba(37, 132, 184, 0.16);
+} */
+ .new-order-section {
+  overflow: hidden;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.02);
 }
 .new-order-head {
   display: flex;
@@ -1537,23 +1640,33 @@ const saveReason = async () => {
 .new-order-head div { display: flex; align-items: center; gap: 10px; }
 .new-label {
   display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; 
-  border-radius: 999px; color: #164e68; background-color: #eaf8fd; font-size: 14px; font-weight: 900;
+  border-radius: 999px; color: #164e68; background-color: #eaf8fd; font-size: 14px; font-weight: 400;
 }
-.new-order-head strong { font-size: 20px; font-weight: 900; }
-.queue-badge { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border-radius: 999px; color: #ffffff; background-color: rgba(255,255,255,0.16); font-size: 14px; font-weight: 800; }
+.new-order-head strong { font-size: 20px; font-weight: 300; }
+.queue-badge { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border-radius: 999px; color: #ffffff; background-color: rgba(255,255,255,0.16); font-size: 14px; font-weight: 400; }
 .new-order-body { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px; }
-.new-order-main h2 { margin: 0 0 6px; color: #111827; font-size: 24px; font-weight: 900; }
+.new-order-main h2 { margin: 0 0 6px; color: #111827; font-size: 24px; font-weight: 400; }
 .new-order-main p { margin: 0; color: #64748b; font-size: 16px; }
 .new-order-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
 
 .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
-.summary-card { min-width: 0; padding: 22px; border: 1px solid #e5e7eb; border-radius: 18px; background-color: #ffffff; }
+/* .summary-card { min-width: 0; padding: 22px; border: 1px solid #e5e7eb; border-radius: 18px; background-color: #ffffff; } */
+.summary-card {
+  min-width: 0;
+  box-sizing: border-box;
+  height: 152px;
+  padding: 19px 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background-color: #fbfdff;
+  box-shadow: none;
+}
 .summary-card.clickable { cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
 .summary-card.clickable:hover { transform: translateY(-2px); border-color: #87ceeb; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08); }
 .summary-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .summary-card-head span { color: #475569; font-size: 16px; font-weight: 900; }
 .summary-card-head small { color: #94a3b8; font-size: 14px; font-weight: 800; }
-.summary-card strong { display: block; margin-bottom: 6px; color: #111827; font-size: 34px; font-weight: 900; letter-spacing: -0.04em; }
+.summary-card strong { display: block; margin-bottom: 6px; color: #111827; font-size: 34px; font-weight: 400; letter-spacing: -0.04em; }
 .summary-card p { margin: 0; color: #64748b; font-size: 15px; }
 .summary-card.waiting { border-color: #87ceeb; background-color: #eaf8fd; }
 .summary-card.cooking { border-color: #bfdbfe; }
@@ -1564,7 +1677,19 @@ const saveReason = async () => {
 /* ============================================================
    검색 필터 패널
    ============================================================ */
-.filter-panel { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; padding: 18px; border: 1px solid #e5e7eb; border-radius: 18px; background-color: #ffffff; }
+/* .filter-panel { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; padding: 18px; border: 1px solid #e5e7eb; border-radius: 18px; background-color: #ffffff; } */
+.filter-panel {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+  padding: 30px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.02);
+}
 .filter-group { display: grid; gap: 8px; min-width: 150px; }
 .filter-group.grow { flex: 1; }
 .filter-group label { color: #64748b; font-size: 16px; font-weight: 900; }
@@ -1575,12 +1700,24 @@ const saveReason = async () => {
    메인 테이블 & 상세 패널 (가독성 향상)
    ============================================================ */
 .orders-content { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; align-items: start; }
-.order-list-panel, .order-detail-panel { border: 1px solid #e5e7eb; border-radius: 18px; background-color: #ffffff; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06); }
-.order-list-panel { min-width: 0; padding: 22px; }
+/* .order-list-panel, .order-detail-panel { border: 1px solid #e5e7eb; border-radius: 18px; background-color: #ffffff; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06); } */
+.order-list-panel,
+.order-detail-panel {
+  box-sizing: border-box;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.02);
+}
+/* .order-list-panel { min-width: 0; padding: 22px; } */
+.order-list-panel {
+  min-width: 0;
+  padding: 30px;
+}
 .panel-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .panel-title-row h2 { margin: 0 0 6px; color: #111827; font-size: 23px; font-weight: 900; }
 .panel-title-row p { margin: 0; color: #64748b; font-size: 16px; }
-.count-text { color: #2784b8; font-size: 16px; font-weight: 900; white-space: nowrap; }
+.count-text { color: #000000; font-size: 16px; font-weight: 400; white-space: nowrap; }
 
 .table-scroll {
   overflow-x: auto;
@@ -1626,8 +1763,8 @@ const saveReason = async () => {
 .order-table td strong {
   display: block;
   color: #111827;
-  font-size: 17px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .order-table td small {
@@ -1695,8 +1832,8 @@ const saveReason = async () => {
   padding: 0;
   border: 0;
   background-color: transparent;
-  color: #2784b8;
-  font-weight: 900;
+  color: #000000;
+  font-weight: 400;
   font-size: 16px;
   line-height: 1.35;
   text-decoration: underline;
@@ -1770,13 +1907,13 @@ const saveReason = async () => {
 .new-order-request-box span {
   color: #64748b;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 400;
 }
 
 .new-order-request-box strong {
   color: #111827;
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1.45;
   word-break: keep-all;
 }
@@ -1784,7 +1921,7 @@ const saveReason = async () => {
 .new-order-request-box small {
   color: #c2410c;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 400;
 }
 
 .pagination {
@@ -1805,7 +1942,7 @@ const saveReason = async () => {
   color: #475569;
   background-color: #ffffff;
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -1826,8 +1963,7 @@ const saveReason = async () => {
   display: inline-flex; align-items: center; justify-content: center; min-height: 30px; 
   padding: 0 12px; margin: 2px 2px 2px 0; border-radius: 999px; font-size: 14px; font-weight: 900; white-space: nowrap; 
 }
-.platform-badge { color: #334155; background: #ffffff; border: 1px solid #94a3b8; }
-.platform-badge::before { content: ""; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: #64748b; }
+
 .status-badge.status-waiting { color: #121213; background-color: #eaf8fd; }
 .status-badge.status-cooking { color: #92400e; background-color: #fffbeb; }
 .status-badge.status-delivering { color: #166534; background-color: #dcfce7; }
@@ -1848,7 +1984,12 @@ const saveReason = async () => {
 /* ============================================================
    상세 패널
    ============================================================ */
-.order-detail-panel { position: sticky; top: 86px; padding: 22px; }
+/* .order-detail-panel { position: sticky; top: 86px; padding: 22px; } */
+.order-detail-panel {
+  position: sticky;
+  top: 86px;
+  padding: 30px;
+}
 .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9; }
 .detail-label { color: #64748b; font-size: 14px; font-weight: 900; }
 .detail-head h2 { margin: 6px 0 0; color: #111827; font-size: 13px; font-weight: 900; }
@@ -1869,10 +2010,9 @@ const saveReason = async () => {
   font-size: 16px;
 }
 
-.detail-row strong,
 .cost-row strong {
   color: #111827;
-  font-weight: 800;
+  font-weight: 700;
   text-align: right;
   word-break: keep-all;
 }
@@ -1880,6 +2020,10 @@ const saveReason = async () => {
 .detail-row strong {
   max-width: 220px;
   line-height: 1.45;
+  color: #111827;
+  font-weight: 400;
+  text-align: right;
+  word-break: keep-all;
 }
 
 .detail-row:nth-child(4) strong {
@@ -1999,7 +2143,7 @@ const saveReason = async () => {
   margin: 0 0 8px;
   color: #111827;
   font-size: 30px;
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1.25;
 }
 
@@ -2097,9 +2241,9 @@ const saveReason = async () => {
   padding: 0;
   border: 0;
   background-color: transparent;
-  color: #2784b8;
+  color: #000000;
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1.25;
   text-decoration: none;
   word-break: break-all;
@@ -2197,6 +2341,7 @@ const saveReason = async () => {
 .detail-menu-title strong {
   color: #111827;
   font-size: 15px;
+  font-weight: 400;
 }
 
 .detail-menu-list {
@@ -2219,6 +2364,7 @@ const saveReason = async () => {
   display: block;
   color: #111827;
   font-size: 15px;
+  font-weight: 400;
 }
 
 .detail-menu-item small {
@@ -2271,16 +2417,15 @@ const saveReason = async () => {
 .detail-section h3,
 .detail-head h2,
 .new-order-main h2 {
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .category-text,
-.count-text,
 .filter-group label,
 .summary-card-head span,
 .detail-label,
 .card-label {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .new-order-main h2 {
@@ -2295,7 +2440,7 @@ const saveReason = async () => {
 
 .new-order-request-box strong,
 .request-text-large {
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .new-order-actions .primary-button,
@@ -2316,7 +2461,7 @@ const saveReason = async () => {
 .platform-badge,
 .risk-badge,
 .delay-badge {
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .menu-cell small,
@@ -2397,5 +2542,42 @@ const saveReason = async () => {
 .modal-order-actions {
   width: 100%;
 }
+.detail-floating-top-button {
+  position: fixed;
+  right: 28px;
+  bottom: 110px;
+  z-index: 60;
+
+  width: 44px;
+  height: 44px;
+  border: 1px solid #dbe3ee;
+  border-radius: 999px;
+
+  background-color: rgba(255, 255, 255, 0.96);
+  color: #164e68;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+
+  backdrop-filter: blur(8px);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.detail-floating-top-button:hover {
+  transform: translateY(-2px);
+  border-color: #87ceeb;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
+}
+
+@media (max-width: 1200px) {
+  .detail-floating-top-button {
+    right: 18px;
+    bottom: 88px;
+  }
+}
+
 
 </style>

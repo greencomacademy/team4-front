@@ -1065,13 +1065,13 @@ const handleOperationSubmit = async () => {
 .data-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; }
 .data-table th { 
   background: #f8fafc; padding: 18px 16px; font-size: 15px; 
-  color: #475569; font-weight: 800; border-bottom: 2px solid #e5e7eb; white-space: nowrap; 
+  color: #475569; font-weight: 400; border-bottom: 2px solid #e5e7eb; white-space: nowrap; 
 }
 .data-table th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
 .data-table th:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
 .data-table td { padding: 18px 16px; font-size: 16px; color: #111827; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
 .data-table tbody tr:hover { background: #EAF8FD; }
-.data-table td strong { font-size: 18px; font-weight: 800; color: #111827; }
+.data-table td strong { font-size: 18px; font-weight: 400; color: #111827; }
 
 .input-wrapper { position: relative; display: flex; align-items: center; width: 100%; max-width: 200px; }
 .input-field { 
@@ -1092,7 +1092,7 @@ const handleOperationSubmit = async () => {
   padding: 16px 20px;
   border-radius: 10px;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 400;
   margin-top: 10px;
 }
 
@@ -1111,7 +1111,7 @@ const handleOperationSubmit = async () => {
 
 .btn-sm-primary { 
   background: #EAF8FD; color: #2784B8; padding: 12px 20px; font-size: 15px; 
-  font-weight: 900; border: none; border-radius: 10px; cursor: pointer; 
+  font-weight: 400; border: none; border-radius: 10px; cursor: pointer; 
   transition: all 0.2s ease; white-space: nowrap;
 }
 .btn-sm-primary:hover { background: #2784B8; color: white; }
@@ -1131,7 +1131,7 @@ const handleOperationSubmit = async () => {
   background: #ffffff;
   border-radius: 10px;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 400;
   color: #374151;
   cursor: pointer;
 }
@@ -1143,7 +1143,7 @@ const handleOperationSubmit = async () => {
   background: #3b82f6; 
   border-radius: 10px;
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 400;
   color: #ffffff;
   cursor: pointer;
   transition: background 0.2s;

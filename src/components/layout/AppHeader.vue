@@ -372,7 +372,7 @@ const logout = async () => {
 .header-title {
   margin: 0;
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text-main);
   letter-spacing: -0.3px;
 }
@@ -388,7 +388,7 @@ const logout = async () => {
   border: 1px solid #dbe3ee;
   background: #ffffff;
   color: #334155;
-  font-weight: 900;
+  font-weight: 400;
   cursor: pointer;
   transition: all 0.2s;
 }
