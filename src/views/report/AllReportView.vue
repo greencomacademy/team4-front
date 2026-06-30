@@ -234,6 +234,32 @@ const summaryStats = computed(() => {
     completedCount: completed.length,
   };
 });
+const formatDateOnly = (value) => {
+  if (!value) {
+    return '-';
+  }
+
+  return String(value).slice(0, 10);
+};
+
+const formatTimeOnly = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const dateText = String(value);
+
+  if (dateText.includes('T')) {
+    return dateText.split('T')[1]?.slice(0, 5) || '';
+  }
+
+  if (dateText.includes(' ')) {
+    return dateText.split(' ')[1]?.slice(0, 5) || '';
+  }
+
+  return '';
+};
+
 
 const historyTypeSummary = computed(() => {
   return historyOrders.value.reduce((acc, order) => {
@@ -527,16 +553,8 @@ onMounted(() => {
       <button class="tab" :class="{ active: activeTab === 'export' }" @click="activeTab = 'export'">필터/엑셀 내보내기</button>
     </div>
 
-    <article v-if="activeTab === 'sales'" class="card report-card sales-report-combined-card">
-      <div class="card-header">
-        <div class="title-area">
-          <h2>매출 리포트</h2>
-          <p class="required-note">매장 영업일 기준으로 완료 매출과 예상 순수익을 확인합니다. 필터 설정에서 날짜별 조회가 가능합니다.</p>
-        </div>
-        <button class="primary-button" @click="exportExcel('매출')">매출 내보내기</button>
-      </div>
-
-      <section class="report-summary-grid">
+    <section v-if="activeTab === 'sales'" class="sales-report-page-block">
+      <section class="report-summary-grid sales-summary-grid">
         <article class="summary-box">
           <span>완료 매출</span>
           <strong>{{ formatMoney(summaryStats.totalSales) }}</strong>
@@ -562,28 +580,35 @@ onMounted(() => {
         </article>
       </section>
 
-      <div class="table-scroll">
+      <article class="card report-card sales-report-card">
+        <div class="card-header">
+          <div class="title-area">
+            <h2>매출 리포트</h2>
+            <p class="required-note">매장 영업일 기준으로 완료 매출과 예상 순수익을 확인합니다. 필터 설정에서 날짜별 조회가 가능합니다.</p>
+          </div>
+          <button class="primary-button" @click="exportExcel('매출')">매출 내보내기</button>
+        </div>
+
+        <div class="table-scroll">
         <table class="data-table">
          <thead>
           <tr>
-            <th>날짜</th>
             <th>플랫폼 주문번호</th>
             <th>플랫폼</th>
             <th>메뉴</th>
             <th>주문금액</th>
+            <th>메뉴 원가</th>
             <th>플랫폼 수수료</th>
             <th>배달비 부담</th>
             <th>쿠폰 부담</th>
-            <th>플랫폼 지원금</th>
-            <th>메뉴 원가</th>
             <th>포장비</th>
+            <th>플랫폼 지원금</th>
             <th>예상 순수익</th>
             <th>완료일시</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="order in pagedSalesOrders" :key="order.orderNo">
-            <td class="text-muted cancel-date-cell">{{ order.orderDate }}</td>
             <td class="cancel-status-cell">
               <strong class="order-no-main">{{ order.platformOrderNo }}</strong>
             </td>
@@ -594,12 +619,12 @@ onMounted(() => {
             </td>
             <td class="text-main">{{ order.menuSummary }}</td>
             <td class="text-muted">{{ formatMoney(order.totalAmount) }}</td>
+            <td class="text-muted">{{ formatMoney(order.menuCostAmount) }}</td>
             <td class="text-muted">{{ formatMoney(order.commissionAmount) }}</td>
             <td class="text-muted">{{ formatMoney(order.deliveryFeeAmount) }}</td>
             <td class="text-muted">{{ formatMoney(order.couponAmount) }}</td>
-            <td class="text-muted">{{ formatMoney(order.platformSupportAmount) }}</td>
-            <td class="text-muted">{{ formatMoney(order.menuCostAmount) }}</td>
             <td class="text-muted">{{ formatMoney(order.packagingAmount) }}</td>
+            <td class="text-muted">{{ formatMoney(order.platformSupportAmount) }}</td>
             <td>
               <strong
                 class="profit-strong"
@@ -608,10 +633,13 @@ onMounted(() => {
                 {{ formatMoney(order.netProfit) }}
               </strong>
             </td>
-            <td class="text-muted">{{ order.completedAt || '-' }}</td>
+            <td class="text-muted report-date-cell">
+              <span>{{ formatDateOnly(order.completedAt) }}</span>
+              <span>{{ formatTimeOnly(order.completedAt) }}</span>
+            </td>
           </tr>
           <tr v-if="salesOrders.length === 0">
-            <td colspan="13" class="empty-message">
+            <td colspan="12" class="empty-message">
               조건에 맞는 완료 주문이 없습니다.
             </td>
           </tr>
@@ -651,8 +679,9 @@ onMounted(() => {
         >
           다음
         </button>
-      </div>
-    </article>
+        </div>
+      </article>
+    </section>
 
    <section v-if="activeTab === 'cancel'" class="grid-12 report-cancel-layout">
   <article class="card col-4 cancel-summary-card">
@@ -1114,7 +1143,7 @@ onMounted(() => {
   min-height: 46px;
   padding: 0 20px;
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 400;
   transition: all 0.2s;
 }
 
@@ -1214,6 +1243,16 @@ onMounted(() => {
   margin-bottom: 30px;
 }
 
+.sales-report-page-block {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sales-summary-grid {
+  margin-bottom: 0;
+}
+
 .summary-box {
   padding: 26px 24px;
   border: 1px solid #e5e7eb;
@@ -1302,11 +1341,11 @@ onMounted(() => {
   vertical-align: middle;
 }
 
-.text-muted { color: #64748b; font-size: 16px; font-weight: 600; }
-.text-main { color: #111827; font-size: 16px; font-weight: 800; }
+.text-muted { color: #111827; font-size: 16px; font-weight: 400; }
+.text-main { color: #111827; font-size: 16px; font-weight: 600; }
 .cancel-reason-text { white-space: normal; line-height: 1.5; min-width: 250px; }
 
-.order-no-main { display: block; color: #111827; font-size: 17px; font-weight: 900; }
+.order-no-main { display: block; color: #111827; font-size: 13px; font-weight: 400; }
 .order-no-sub { display: block; margin-top: 4px; color: #94a3b8; font-size: 14px; font-weight: 700; }
 .profit-strong { color: #111827; font-size: 18px; font-weight: 900; }
 
@@ -1333,25 +1372,11 @@ onMounted(() => {
   padding: 0 14px;
   border-radius: 999px;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 400;
   white-space: nowrap;
 }
 
-.platform-badge {
-  background-color: #ffffff;
-  border: 1px solid #94a3b8;
-  color: #334155;
-}
 
-.platform-badge::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 8px;
-  border-radius: 50%;
-  background-color: #64748b;
-}
 
 .status-canceled { color: #b91c1c; background-color: #fee2e2; }
 
@@ -1365,7 +1390,7 @@ onMounted(() => {
   text-align: center;
   color: #9ca3af;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 400;
 }
 
 
@@ -1686,7 +1711,7 @@ onMounted(() => {
 .primary-button,
 .sub-button,
 .tab {
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .report-summary-grid {
@@ -1705,7 +1730,7 @@ onMounted(() => {
 
 .summary-box strong {
   font-size: 30px;
-  font-weight: 700;
+  font-weight: 400;
   white-space: nowrap;
 }
 
@@ -1741,7 +1766,7 @@ onMounted(() => {
 .text-main,
 .order-no-main,
 .profit-strong {
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .order-no-main {
@@ -1755,40 +1780,48 @@ onMounted(() => {
 
 .platform-badge,
 .status-badge {
-  font-weight: 700;
+  font-weight: 400;
 }
 
-.sales-report-combined-card .data-table {
+.sales-report-card .data-table {
   min-width: 1180px;
 }
 
-.sales-report-combined-card .data-table th:nth-child(1),
-.sales-report-combined-card .data-table td:nth-child(1) { width: 78px; }
-.sales-report-combined-card .data-table th:nth-child(2),
-.sales-report-combined-card .data-table td:nth-child(2) { width: 145px; }
-.sales-report-combined-card .data-table th:nth-child(3),
-.sales-report-combined-card .data-table td:nth-child(3) { width: 90px; }
-.sales-report-combined-card .data-table th:nth-child(4),
-.sales-report-combined-card .data-table td:nth-child(4) { width: 145px; }
-.sales-report-combined-card .data-table th:nth-child(5),
-.sales-report-combined-card .data-table td:nth-child(5),
-.sales-report-combined-card .data-table th:nth-child(6),
-.sales-report-combined-card .data-table td:nth-child(6),
-.sales-report-combined-card .data-table th:nth-child(7),
-.sales-report-combined-card .data-table td:nth-child(7),
-.sales-report-combined-card .data-table th:nth-child(8),
-.sales-report-combined-card .data-table td:nth-child(8),
-.sales-report-combined-card .data-table th:nth-child(9),
-.sales-report-combined-card .data-table td:nth-child(9),
-.sales-report-combined-card .data-table th:nth-child(10),
-.sales-report-combined-card .data-table td:nth-child(10),
-.sales-report-combined-card .data-table th:nth-child(11),
-.sales-report-combined-card .data-table td:nth-child(11),
-.sales-report-combined-card .data-table th:nth-child(12),
-.sales-report-combined-card .data-table td:nth-child(12) { width: 92px; }
-.sales-report-combined-card .data-table th:nth-child(13),
-.sales-report-combined-card .data-table td:nth-child(13) { width: 108px; }
+.sales-report-card .data-table th:nth-child(1),
+.sales-report-card .data-table td:nth-child(1) { width: 110px; }
+.sales-report-card .data-table th:nth-child(2),
+.sales-report-card .data-table td:nth-child(2) { width: 80px; }
+.sales-report-card .data-table th:nth-child(3),
+.sales-report-card .data-table td:nth-child(3) { width: 140px; }
+.sales-report-card .data-table th:nth-child(4),
+.sales-report-card .data-table td:nth-child(4) { width: 100px; }
+.sales-report-card .data-table th:nth-child(5),
+.sales-report-card .data-table td:nth-child(5),
+.sales-report-card .data-table th:nth-child(6),
+.sales-report-card .data-table td:nth-child(6),
+.sales-report-card .data-table th:nth-child(7),
+.sales-report-card .data-table td:nth-child(7),
+.sales-report-card .data-table th:nth-child(8),
+.sales-report-card .data-table td:nth-child(8),
+.sales-report-card .data-table th:nth-child(9),
+.sales-report-card .data-table td:nth-child(9),
+.sales-report-card .data-table th:nth-child(10),
+.sales-report-card .data-table td:nth-child(10),
+.sales-report-card .data-table th:nth-child(11),
+.sales-report-card .data-table td:nth-child(11) { width: 92px; }
+.sales-report-card .data-table th:nth-child(12),
+.sales-report-card .data-table td:nth-child(12) { width: 108px; }
 
+.sales-report-card .data-table td:nth-child(5),
+.sales-report-card .data-table td:nth-child(6),
+.sales-report-card .data-table td:nth-child(7),
+.sales-report-card .data-table td:nth-child(8),
+.sales-report-card .data-table td:nth-child(9)
+
+
+  {
+    color: #dc2626;
+  }
 
 .report-pagination {
   margin-top: 18px;
@@ -2220,12 +2253,45 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 }
+.report-date-cell {
+  white-space: nowrap;
+  text-align: center;
+}
 
+.report-date-cell span {
+  display: block;
+  line-height: 1.35;
+}
 
 
 /* 예상 순수익이 음수인 경우 수익 숫자를 빨간색으로 강조한다. */
 .profit-strong.loss-text,
 .data-table .profit-strong.loss-text {
   color: #dc2626;
+  
 }
+ .profit-strong{color:#15803d;
+ font-weight: 700;}
+
+/* ============================================================
+   2026-06-30 매출 리포트 구조 분리
+   - 요약 KPI 카드를 매출 리포트 카드 밖으로 분리한다.
+   - 운영 리포트에서도 summary-box가 독립 카드처럼 보이게 한다.
+   - 폰트 크기/굵기는 기존 보정값을 그대로 둔다.
+   ============================================================ */
+.sales-report-page-block {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sales-summary-grid {
+  margin-bottom: 0;
+}
+
+.sales-report-card {
+  overflow: hidden;
+}
+
+
 </style>

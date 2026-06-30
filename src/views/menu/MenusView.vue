@@ -1343,7 +1343,7 @@ const restoreDismissedLossMenu = async (menu) => {
 
 .data-table td strong {
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 400;
   color: #111827;
 }
 
@@ -1544,7 +1544,7 @@ const restoreDismissedLossMenu = async (menu) => {
   color: #164e68;
   background: #eaf8fd;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 400;
   white-space: nowrap;
 }
 
@@ -1588,7 +1588,7 @@ const restoreDismissedLossMenu = async (menu) => {
   color: #334155;
   background: #ffffff;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 400;
   cursor: pointer;
   box-sizing: border-box;
 }
@@ -1606,13 +1606,13 @@ const restoreDismissedLossMenu = async (menu) => {
   color: #334155;
   background: #f8fafc;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .loss-result-line strong {
-  color: #2784b8;
-  font-size: 17px;
-  font-weight: 900;
+  color: #000000;
+  font-size: 15px;
+  font-weight: 400;
 }
 
 .loss-menu-grid.refined {
@@ -1870,7 +1870,7 @@ const restoreDismissedLossMenu = async (menu) => {
   color: #475569;
   background: #ffffff;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -1903,7 +1903,7 @@ const restoreDismissedLossMenu = async (menu) => {
   min-height: 44px;
   padding: 0 18px;
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 400;
   transition: all 0.2s;
 }
 
@@ -2093,7 +2093,7 @@ const restoreDismissedLossMenu = async (menu) => {
   color: #111827;
   background: #ffffff;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
   outline: none;
   box-sizing: border-box;
 }

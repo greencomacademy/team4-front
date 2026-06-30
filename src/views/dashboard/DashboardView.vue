@@ -575,7 +575,7 @@ onMounted(async () => {
           <p>{{ operationBrief.desc }}</p>
         </div>
         <div class="brief-action-list">
-          <button 
+          <!-- <button 
             v-for="(order, index) in priorityOrders.slice(0, 3)" 
             :key="order.orderNo"
             type="button" 
@@ -586,7 +586,7 @@ onMounted(async () => {
               <strong>{{ order.platformNo }} · {{ order.issueLabel }}</strong>
               <small>{{ order.platform }} · {{ order.menuSummary }} · {{ order.issueReason }}</small>
             </span>
-          </button>
+          </button> -->
           <div v-if="!priorityOrders.length" class="brief-empty">
             현재 진행 중인 주문이 없습니다.
           </div>
@@ -770,7 +770,7 @@ onMounted(async () => {
   padding: 0 18px;
   border-radius: 12px;
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 400;
   transition: all 0.2s;
 }
 
@@ -803,12 +803,31 @@ onMounted(async () => {
 /* ============================================================
    카드 스타일
    ============================================================ */
-.kpi-card,
+/* .kpi-card,
 .detail-card {
   background: #fff;
   padding: 26px;
   border-radius: 18px;
   border: 1px solid #e5e7eb;
+  transition: transform 0.2s, box-shadow 0.2s;
+} */
+.kpi-card {
+  box-sizing: border-box;
+  background: #fbfdff;
+  padding: 26px 24px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.detail-card {
+  box-sizing: border-box;
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.02);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -817,8 +836,6 @@ onMounted(async () => {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
 }
 
-.border-success { border-left: 6px solid var(--success); }
-.border-danger { border-left: 6px solid var(--danger); }
 
 .card-label { font-size: 17px; color: #6b7280; margin-bottom: 12px; font-weight: 800; }
 .card-value { font-size: 34px; font-weight: 900; color: #111827; letter-spacing: -0.5px; }
@@ -836,7 +853,7 @@ onMounted(async () => {
 /* ============================================================
    1. 운영 브리핑 카드
    ============================================================ */
-.operation-brief-card {
+/* .operation-brief-card {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
   gap: 26px;
@@ -846,10 +863,24 @@ onMounted(async () => {
   border-radius: 20px;
   background: #fff;
   box-shadow: 0 10px 26px rgba(15, 23, 42, .05);
+} */
+.operation-brief-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
+  gap: 26px;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 30px;
+  min-height: 170px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.02);
 }
 
+
 .operation-brief-card.warning { border-color: #fed7aa; background: #fff7ed; }
-.operation-brief-card.danger { border-color: #fecaca; background: #fff5f5; }
+.operation-brief-card.danger { border-color: #e5e7eb; background: #ffffff; }
 .operation-brief-card.safe { border-color: #bbf7d0; background: #f0fdf4; }
 
 .brief-main span { color: #64748b; font-size: 16px; font-weight: 900; letter-spacing: .04em; display: block; margin-bottom: 8px;}
@@ -987,17 +1018,23 @@ onMounted(async () => {
   min-height: 38px;
   padding: 0 14px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .grid-12 {
   gap: 14px;
 }
 
-.operation-brief-card {
+/* .operation-brief-card {
   grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
   gap: 18px;
   padding: 18px 22px;
+} */
+.operation-brief-card {
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+  gap: 18px;
+  padding: 30px;
+  min-height: 170px;
 }
 
 .brief-main span {
@@ -1012,7 +1049,7 @@ onMounted(async () => {
 
 .brief-main p {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .brief-action-list {
@@ -1036,7 +1073,7 @@ onMounted(async () => {
 
 .brief-action-list strong {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .brief-action-list small {
@@ -1044,10 +1081,21 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-.kpi-card,
+/* .kpi-card,
 .detail-card {
   padding: 18px 22px;
   border-radius: 16px;
+} */
+.kpi-card {
+  padding: 26px 24px;
+  border-radius: 16px;
+  min-height: 132px;
+}
+
+.detail-card {
+  padding: 30px;
+  border-radius: 20px;
+  min-height: 300px;
 }
 
 .card-label {
@@ -1058,7 +1106,7 @@ onMounted(async () => {
 
 .card-value {
   font-size: 29px;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .card-sub {
@@ -1094,7 +1142,7 @@ onMounted(async () => {
 
 .priority-order-item strong {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 400;
   word-break: break-all;
 }
 
