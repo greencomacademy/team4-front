@@ -220,6 +220,19 @@ const formatTime = (dateTime) => {
   });
 };
 
+const getOrderItemName = (item) => {
+  return item.orderedMenuName || item.menuName || '-';
+};
+
+const getOrderItemTotalAmount = (item) => {
+  const savedAmount = Number(item.itemMenuAmount || 0);
+
+  if (savedAmount > 0) {
+    return savedAmount;
+  }
+
+  return Number(item.orderedMenuPrice || 0) * Number(item.quantity || 0);
+};
 // 최신 주문 정렬 기준값
 const getOrderSortValue = (order) => {
   const rawDateTime =
@@ -1187,7 +1200,37 @@ const saveReason = async () => {
         <div class="detail-section">
           <h3>주문 정보</h3>
           <div class="detail-row"><span>플랫폼</span><strong>{{ getPlatformName(selectedOrder.platformType) }}</strong></div>
-          <div class="detail-row"><span>메뉴</span><strong>{{ selectedOrder.menuSummary }}</strong></div>
+          <div class="detail-menu-block">
+          <div class="detail-menu-title">
+            <span>메뉴</span>
+            <strong>총 {{ selectedOrder.totalQuantity }}개</strong>
+          </div>
+
+          <div
+            v-if="(selectedOrder.items || []).length"
+            class="detail-menu-list"
+          >
+            <div
+              v-for="item in selectedOrder.items"
+              :key="item.id"
+              class="detail-menu-item"
+            >
+              <div>
+                <strong>{{ getOrderItemName(item) }}</strong>
+                <small>
+                  {{ Number(item.quantity || 0) }}개 ·
+                  단가 {{ formatMoney(item.orderedMenuPrice) }}
+                </small>
+              </div>
+
+              <b>{{ formatMoney(getOrderItemTotalAmount(item)) }}</b>
+            </div>
+          </div>
+
+          <strong v-else class="detail-menu-fallback">
+            {{ selectedOrder.menuSummary }}
+          </strong>
+        </div>
           <div class="detail-row"><span>배달주소</span><strong>{{ selectedOrder.deliveryAddress }}</strong></div>
           <div class="detail-row request-row"><span>요청사항</span><strong>{{ selectedOrder.requestText || '없음' }}</strong></div>
         </div>
@@ -2131,7 +2174,70 @@ const saveReason = async () => {
     flex: 1;
   }
 }
+.detail-menu-block {
+  display: grid;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
 
+.detail-menu-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-menu-title span {
+  color: #6b7280;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.detail-menu-title strong {
+  color: #111827;
+  font-size: 15px;
+}
+
+.detail-menu-list {
+  display: grid;
+  gap: 8px;
+}
+
+.detail-menu-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background-color: #f8fafc;
+}
+
+.detail-menu-item strong {
+  display: block;
+  color: #111827;
+  font-size: 15px;
+}
+
+.detail-menu-item small {
+  display: block;
+  margin-top: 3px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.detail-menu-item b {
+  flex-shrink: 0;
+  color: #164E68;
+  font-size: 14px;
+}
+
+.detail-menu-fallback {
+  color: #111827;
+  font-size: 15px;
+}
 
 /* ============================================================
    2026-06-27 주문 상세 액션 위치 보정
