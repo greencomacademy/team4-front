@@ -26,6 +26,37 @@ const togglePassword = () => {
 const togglePasswordChk = () => {
   showPasswordChk.value = !showPasswordChk.value;
 };
+const getRegisterErrorMessage = (error) => {
+  const response = error.response?.data;
+  const data = response?.data;
+
+  const fieldLabels = {
+    email: '이메일',
+    password: '비밀번호',
+    passwordChk: '비밀번호 확인',
+  };
+
+  if (typeof data === 'string') {
+    return data;
+  }
+
+  if (data && typeof data === 'object') {
+    return Object.entries(data)
+      .map(([field, message]) => {
+        const label = fieldLabels[field] || field;
+        return `${label}: ${message}`;
+      })
+      .join('\n');
+  }
+
+  if (response?.message) {
+    return response.message;
+  }
+
+  return '회원가입에 실패했습니다.';
+};
+
+
 
 // 회원가입 폼 제출 함수
 const handleRegister = async () => {

@@ -12,6 +12,8 @@ const detailBottomRef = ref(null);
 const ordersContentRef = ref(null);
 const showDetailTopButton = ref(false);
 
+const detailActionsRef = ref(null);
+
 let detailScrollContainer = null;
 
 const route = useRoute();
@@ -596,10 +598,44 @@ const selectOrder = async (order) => {
   }
 };
 
+const isElementVisibleInPageArea = (element) => {
+  if (!element) {
+    return false;
+  }
+
+  const pageArea = getPageScrollContainer();
+  const elementRect = element.getBoundingClientRect();
+
+  if (pageArea) {
+    const pageRect = pageArea.getBoundingClientRect();
+
+    return (
+      elementRect.top >= pageRect.top + 12 &&
+      elementRect.bottom <= pageRect.bottom - 12
+    );
+  }
+
+  return (
+    elementRect.top >= 12 &&
+    elementRect.bottom <= window.innerHeight - 12
+  );
+};
+
+const isDetailActionVisible = () => {
+  return isElementVisibleInPageArea(detailActionsRef.value);
+};
+
 const scrollToDetailPanel = async () => {
   await nextTick();
 
-  const scrollTarget = detailBottomRef.value || detailPanelRef.value;
+  if (isDetailActionVisible()) {
+    return;
+  }
+
+  const scrollTarget =
+    detailActionsRef.value ||
+    detailBottomRef.value ||
+    detailPanelRef.value;
 
   if (!scrollTarget) {
     return;
@@ -608,6 +644,7 @@ const scrollToDetailPanel = async () => {
   scrollTarget.scrollIntoView({
     behavior: 'smooth',
     block: 'end',
+    inline: 'nearest',
   });
 };
 
@@ -1385,7 +1422,7 @@ const saveReason = async () => {
           <p>{{ selectedOrder.refundedAt }} · {{ selectedOrder.refundReason }}</p>
         </div>
 
-        <div class="detail-actions">
+        <div class="detail-actions" ref="detailActionsRef">
           <button
             v-if="canCancelOrder(selectedOrder.orderStatus)"
             type="button"
@@ -1601,9 +1638,9 @@ const saveReason = async () => {
   height: 1px;
 }
 .primary-button { border: 0; color: #ffffff; background-color: #2784b8; }
-.primary-button:hover { background-color: #1f6f99; }
+.primary-button:hover { background-color: #0e4563; }
 .sub-button { border: 1px solid #dbe3ee; color: #334155; background-color: #ffffff; }
-.sub-button:hover { background-color: #f8fafc; }
+.sub-button:hover { background-color: #a4b4c4; }
 .sub-button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .danger-outline { color: #b91c1c; border-color: #fecaca; }
@@ -1975,9 +2012,35 @@ const saveReason = async () => {
 .delay-badge.delay-delayed { color: #991b1b; background-color: #fee2e2; }
 .risk-badge { color: #9a3412; background-color: #ffedd5; }
 
-.table-button { min-height: 36px; padding: 0 10px; border: 0; background-color: #eaf8fd; color: #1f1f20; font-size: 14px; font-weight: 900; transition: all 0.2s; }
+/*.table-button { min-height: 36px; padding: 0 10px; border: 0; background-color: #eaf8fd; color: #1f1f20; font-size: 14px; font-weight: 900; transition: all 0.2s; }
 .table-button:hover { background-color: #d9f0fa; }
-.table-button:disabled { opacity: 0.55; cursor: not-allowed; }
+.table-button:disabled { opacity: 0.55; cursor: not-allowed; }*/
+.table-button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #87ceeb;
+  border-radius: 999px;
+  background-color: #ffffff;
+  color: #164e68;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.table-button:hover:not(:disabled) {
+  background-color: #ffffff;
+  border-color: #2784b8;
+  color: #164e68;
+  box-shadow: 0 6px 14px rgba(39, 132, 184, 0.16);
+  transform: translateY(-1px);
+}
+
+.table-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 .done-text { color: #94a3b8; font-size: 15px; font-weight: 800; }
 .empty-message { height: 120px; color: #9ca3af; text-align: center; }
 

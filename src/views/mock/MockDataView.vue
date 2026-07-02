@@ -37,8 +37,8 @@ const handleError = (error) => {
     }
 
     alert(
-      error.response.data.message ||
       error.response.data.data ||
+      error.response.data.message ||
       '요청 중 오류가 발생했습니다.'
     );
     return;
