@@ -206,7 +206,6 @@ const formatTime = (dateTime) => {
   if (!dateTime) {
     return '';
   }
-
   const date = new Date(dateTime);
 
   if (Number.isNaN(date.getTime())) {
